@@ -32,15 +32,27 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		function getConnection($logStream) {
 
 			global $config;
-	
-			$conn = new dbConnection(
-						$config['DB']['host'], 
-						$config['DB']['user'], 
-						$config['DB']['password'], 
-						$config['DB']['schema'], 
-						$config['DB']['port'],
-						$config['DB']['socket']
-						);
+
+			// If we have a socket set - use it..
+			if(isSet($config['DB']['socket']) ) {	
+				$conn = new dbConnection(
+							$config['DB']['host'], 
+							$config['DB']['user'], 
+							$config['DB']['password'], 
+							$config['DB']['schema'], 
+							$config['DB']['port'],
+							$config['DB']['socket']
+							);
+			// If no socket setup - just use TCP settings
+			} else {
+				$conn = new dbConnection(
+							$config['DB']['host'], 
+							$config['DB']['user'], 
+							$config['DB']['password'], 
+							$config['DB']['schema'], 
+							$config['DB']['port']
+							);
+			}
 
 			// Check for error connecting...
 			if($conn->connect_error) {

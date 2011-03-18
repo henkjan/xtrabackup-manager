@@ -32,36 +32,33 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	// What log level should we use - DEBUG or NORMAL
 	$config['LOGS']['level'] = 'DEBUG';
 
-	// The port range made available for use by XBM with netcat
+	// The port range made available for use by XBM with netcat - 
+	// these ports need to be openable on the backup hsot
 	$config['SYSTEM']['port_range']['low'] = 10000;
 	$config['SYSTEM']['port_range']['high'] = 11000;
 
 	// How many can run at once
 	// Globally in this install of XBM
 	$config['SYSTEM']['max_global_concurrent_backups'] = 4;
-	// For any one host at a time...
+	// For any one host at a time... 
 	$config['SYSTEM']['max_host_concurrent_backups'] = 1;
-
-	// Currently this DOES NOTHING!
-	// Maximum amount of time to sleep while waiting for a free slot at the host level
-	// 0 is infinite 
-	$config['SYSTEM']['max_host_sleep_secs'] = 0;
-
 
 	// The hostname of the host xbm runs on - needs to resolve on the hosts to be backed up
 	$config['SYSTEM']['xbm_hostname'] = 'bup06-int';
 
-	// Where to send emails when ALERTs occur - not enabled yet
-	$config['ALERTS']['email'] = 'lmulcahy@marinsoftware.com';
-	$config['ALERTS']['enabled'] = true;
-
-	/* Credentials for connecting to the XBM DB */
+	/* Credentials for connecting to the XBM MySQL DB */
 	$config['DB']['user'] = 'xbm';
 	$config['DB']['password'] = 'xbm';
 	$config['DB']['host'] = 'localhost';
 	$config['DB']['port'] = 3306;
 	$config['DB']['schema'] = 'xbm';
+	// Socket to use -- Comment out if you don't want to use a socket file to connect (TCP)
 	$config['DB']['socket'] = '/mysqldb/tmp/mysql.sock';
 
+	/* INACTIVE FEATURE OPTIONS */
+
+	// Where to send emails when ALERTs occur - not enabled yet
+	$config['ALERTS']['email'] = 'lmulcahy@marinsoftware.com';
+	$config['ALERTS']['enabled'] = true;
 
 ?>
