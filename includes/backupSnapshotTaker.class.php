@@ -7,7 +7,7 @@ This file is part of Xtrabackup Manager.
 
 Xtrabackup Manager is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
+the Free Software Foundation, either version 2 of the License, or
 (at your option) any later version.
 
 Xtrabackup Manager is distributed in the hope that it will be useful,
@@ -547,7 +547,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				pclose($ncProc);	
 
 
-
+/* FIXME
 				$this->infolog->write("Xtrabackup step completed OK. Proceeding with apply-log step...", XBM_LOG_INFO);
 
 				// Begin the apply log process
@@ -601,12 +601,12 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				}
 
 
-				/* For debug
-				print_r($applyStatus);
-				echo "\nWe got STDOUT: \n";
-				echo stream_get_contents($applyPipes[1]);
-				echo "\nWe got STDERR: \n";
-				echo stream_get_contents($applyPipes[2]); */
+//				 For debug
+//				print_r($applyStatus);
+//				echo "\nWe got STDOUT: \n";
+//				echo stream_get_contents($applyPipes[1]);
+//				echo "\nWe got STDERR: \n";
+//				echo stream_get_contents($applyPipes[2]); 
 
 				// Write output to infolog..
 				$this->infolog->write("Apply log process completed successfully with the following output:\n".stream_get_contents($applyPipes[2]), XBM_LOG_INFO);
@@ -614,7 +614,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				// Close out backup process (it should be killed already)
 				proc_close($applyProc);
 
-
+FIXME */
 				// Set the state of the snapshot to COMPLETED
 				if( ! $snapshot->setStatus('COMPLETED') ) {
 					return $this->errorExit('backupSnapshotTaker->takeScheduledBackupSnapshot: '.$snapshot->error, $runningBackup, $snapshot);
@@ -661,6 +661,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$this->error = $this->error ."\n"."Additionally another error occurred while trying to set the Backup Snapshot status to FAILED:\n".$snapshot->error;
 				}
 
+				/* File removal goes here...
 				$this->infolog->write("Attempting to remove files for the failed backup...", XBM_LOG_INFO);
 				if( ! $snapshot->deleteFiles() ) {
 					$this->infolog->write("Additionally another error occurred while trying to remove the files for this backup snapshot:\n".$snapshot->error, XBM_LOG_ERROR);
@@ -668,6 +669,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				} else {
 					$this->infolog->write("Files removed successfully.", XBM_LOG_INFO);
 				}
+				*/
 			}
 
 			
