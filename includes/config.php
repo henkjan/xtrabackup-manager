@@ -20,6 +20,9 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
+	// Disable PHP Warnings - comment this out to re-enable them (or use php.ini settings)
+	error_reporting(0);
+
 	/* The user that xbm should install it's cron in and launch backups from */	
 	$config['SYSTEM']['user'] = 'xbm';
 

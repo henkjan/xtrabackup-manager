@@ -41,12 +41,12 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 	print("\nxbm-flush.php -- ".XBM_RELEASE_VERSION."\n\n");
 
-	print("Flushing backup schedule to crontab for current user...\n");
+	print("Flushing backup schedule to crontab for ".$config['SYSTEM']['user']." user...\n\n");
 	$cronFlusher = new cronFlusher();
 	
 	//$cronFlusher->flushSchedule();
 	if( ! $cronFlusher->flushSchedule() ) {
-		print("Encoutnered a problem while flushing: ".$cronFlusher->error."\n");
+		print("Encoutnered a problem while flushing: ".$cronFlusher->error."\n\n");
 		die();
 	}
 

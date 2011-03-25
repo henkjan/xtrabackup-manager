@@ -355,7 +355,16 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			fclose($fp);
-			exec("crontab $tmpName", $output, $returnVar);
+
+			// If we are trying to flush as any other user, give the -u option to crontab
+			// unfortunately the -u option can only be used for privileged users, otherwise we get an error
+			// This is even the case if you try to use the -u option to specify the current user!!
+			if( exec('whoami') != $config['SYSTEM']['user'] ) {
+				exec("crontab -u ".$config['SYSTEM']['user']." $tmpName", $output, $returnVar);
+			} else {
+				exec("crontab $tmpName", $output, $returnVar);
+			}
+
 			if($returnVar != 0 ) {
 				$this->error = 'cronFlusher->flushSchedule: '."Error: Could not install crontab with file - $tmpName - Got error $returnVar and output:\n".implode("\n", $output);
 				return false;
@@ -379,6 +388,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$hostGetter = new hostGetter();
 			if( ( $hosts = $hostGetter->getAll() ) === false ) {
 				$this->error = 'cronFlusher->buildCron: '.$hostGetter->error;
+				return false;
 			}
 
 			

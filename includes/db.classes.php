@@ -55,8 +55,9 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			// Check for error connecting...
-			if($conn->connect_error) {
-				$this->error = 'dbConnectionGetter->getConnection: ' . "Error: Can't connect to MySQL (".$conn->connect_errno.") "
+			// We use mysqli_connect_error and errno instead of $conn->connect_error / errno because it was broken before PHP 5.2.9 and 5.3.0
+			if(mysqli_connect_error()) {
+				$this->error = 'dbConnectionGetter->getConnection: ' . "Error: Can't connect to MySQL (".mysqli_connect_errno().") - please check that settings in config.php are correct."
 					. $conn->connect_error;
 				return false;
 			}
@@ -72,9 +73,13 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	class dbConnection extends mysqli {
 
 		// Construct
-		function __construct($host, $username, $password, $schema, $port, $socket) {
+		function __construct($host, $username, $password, $schema, $port, $socket = false) {
 
-			parent::__construct($host, $username, $password, $schema, $port, $socket);
+			if( $socket === false ) {
+				parent::__construct($host, $username, $password, $schema, $port);
+			} else {
+				parent::__construct($host, $username, $password, $schema, $port, $socket);
+			}
 			$this->log = false;
 
 		}
