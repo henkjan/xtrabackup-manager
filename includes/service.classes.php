@@ -423,7 +423,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 					if( $scheduledBackupInfo['active'] == 'Y' ) {
 						$cron .= "\n# Backup: ".$scheduledBackupInfo['name']."\n";
-						$cron .= $scheduledBackupInfo['cron_expression'].' xbm-backup.php -s '.$scheduledBackupInfo['scheduled_backup_id']." -q\n";
+						$cron .= $scheduledBackupInfo['cron_expression'].' xbm-backup -s '.$scheduledBackupInfo['scheduled_backup_id']." -q\n";
 					} else {
 						continue;
 					}
