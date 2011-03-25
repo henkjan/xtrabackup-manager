@@ -39,7 +39,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-	print("\nxbm-flush.php -- ".XBM_RELEASE_VERSION."\n\n");
+	print("\n".basename(__FILE__)." -- ".XBM_RELEASE_VERSION."\n\n");
 
 	print("Flushing backup schedule to crontab for ".$config['SYSTEM']['user']." user...\n\n");
 	$cronFlusher = new cronFlusher();
@@ -53,6 +53,5 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	print("Completed OK!\n\n");
 
 
-
-
+	/* vi: set filetype=php */
 ?>

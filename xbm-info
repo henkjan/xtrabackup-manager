@@ -39,10 +39,20 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
-	print("\nxbm-info.php -- ".XBM_RELEASE_VERSION."\n");
+	print("\n".basename(__FILE__)." -- ".XBM_RELEASE_VERSION."\n");
+
+	// Show help and exit
+	if( isSet($options['h']) || sizeOf($options) == 0) {
+		$msg = "\nParameters: \n";
+		foreach($optDef as $opt => $desc) {
+			$msg .= "  -".$opt."	".$desc."\n";
+		}
+		print($msg."\n\n");	
+		die();
+	}
 
 	/* -l Option -- List the hostnames */
-	if( isSet($options['l']) && !isSet($options['h']) ) {
+	if( isSet($options['l']) ) {
 		print("\nListing Hosts:\n\n");
 		$hostGetter = new hostGetter();
 
@@ -65,14 +75,12 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				print("\n");
 			}
 		}
-
 		print("\n");
 	}
 
 
 	/* -v Option -- List the Backup volumes */
-	if( isSet($options['v']) && !isSet($options['h']) ) {
-
+	if( isSet($options['v']) ) {
 		print("\nListing Backup Volumes:\n\n");
 		$volumeGetter = new volumeGetter();
 		if( ( $volumes = $volumeGetter->getAll() )  === false) {
@@ -98,22 +106,5 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		print("\n");
 	}
 
-
-
-
-	if( isSet($options['h']) || sizeOf($options) == 0) {
-		
-		$msg = "\nParameters: \n";
-		foreach($optDef as $opt => $desc) {
-			$msg .= "  -".$opt."	".$desc."\n";
-		}
-
-		print($msg."\n\n");	
-		die();
-
-	}
-
-
-
-
+	/* vi: set filetype=php */
 ?>

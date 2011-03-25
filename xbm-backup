@@ -42,28 +42,25 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 	if(!isSet($options['q']))
-		print("\nxbm-backup.php -- ".XBM_RELEASE_VERSION."\n");
+		print("\n".basename(__FILE__)." -- ".XBM_RELEASE_VERSION."\n");
 
 	if(isSet($options['s']) && !is_numeric($options['s']) ) {
 		print("\nThe -s option must be numeric.\n");
+		// Show help text
+		$options['h'] = true;
 	}
 	if(!isSet($options['s']) ) {
 		print("\nThe -s options is required.\n");
+		// Show help text
+		$options['h'] = true;
 	}
 
 	// Catch the -h option first - print help text
-	if( isSet($options['h']) || sizeOf($options) == 0 || 
-		// or If S options set but not numeric
-		(isSet($options['s']) && !is_numeric($options['s']) )  ||
-		// or if s option not set
-		(!isSet($options['s']) )
-	) {
-		
+	if( isSet($options['h']) || sizeOf($options) == 0 ) {
 		$msg = "\nParameters: \n";
 		foreach($optDef as $opt => $desc) {
 			$msg .= "  -".$opt."	".$desc."\n";
 		}
-
 		print($msg."\n\n");	
 		die();
 
@@ -81,13 +78,13 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	$scheduledBackupGetter->setLogStream($log);
 	
 	if( ! ( $scheduledBackup = $scheduledBackupGetter->getById($options['s']) ) ) {
-		print("xbm-backup.php: ".$scheduledBackupGetter->error."\n");
+		print(basename(__FILE__).": ".$scheduledBackupGetter->error."\n");
 		die();
 	}
 
 
 	if( ! ( $scheduledBackupInfo = $scheduledBackup->getInfo() ) ) {
-		print("xbm-backup.php: ".$scheduledBackup->error."\n");
+		print(basename(__FILE__).": ".$scheduledBackup->error."\n");
 		die();
 	}
 
@@ -95,12 +92,12 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	if( ! isSet($options['f']) ) {
 
 		if( ! $scheduledBackup->pollActive() ) {
-			print("xbm-backup.php: ".$scheduledBackup->error."\n");
+			print(basename(__FILE__).": ".$scheduledBackup->error."\n");
 			die();
 		}
 
 		if( ! $scheduledBackup->active) {
-			print("The specified backup is not active - Reason: ".$scheduledBackup->inactive_reason." -- exiting...\n");
+			print(basename(__FILE__).": The specified backup is not active - Reason: ".$scheduledBackup->inactive_reason." -- exiting...\n");
 			die();
 		} 
 			
@@ -136,5 +133,5 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	}
 
 	
-		
+	/* vi: set filetype=php */
 ?>
