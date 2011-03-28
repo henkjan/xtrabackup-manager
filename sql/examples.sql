@@ -27,7 +27,7 @@ INSERT INTO scheduled_backups (name, cron_expression, snapshots_retained, backup
 	@hv, /* The host_id of the entry in the hosts table that corresponds to the host this backup should run on */
 	'Y', /* Is this scheduled backup active? Y or N */
 	@bv, /* The backup volume storage to use to store the snapshots for this scheduled backup */
-	4,   /* The mysql_type_id from the mysql_types table for the type of MySQL server that is running - 4 is MySQL 5.0 w/ built-in InnoDB
+	4   /* The mysql_type_id from the mysql_types table for the type of MySQL server that is running - 4 is MySQL 5.0 w/ built-in InnoDB
 			This helps choose the correct xtrabackup binary to use for backup purposes */
 );
 
