@@ -312,7 +312,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				return false;
 			}
 
-			if( preg_match('/to_lsn = ([0-9]+:[0-9]+)/', $file, $matches) == 0 ) {
+			if( preg_match('/to_lsn = ([0-9]+:[0-9]+|[0-9]+)/', $file, $matches) == 0 ) {
                 $this->error = 'backupSnapshot->getLsn: '."Error: Could find log sequence information in file: ".$path."/xtrabackup_checkpoints";
                 return false;
 			}
