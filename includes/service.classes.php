@@ -833,7 +833,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			
 
 			$mergeDescriptors = Array(
-								0 => Array('pipe', 'r'), // Process will read from STDIN pipe
+								0 => Array('file', '/dev/null', 'r'), // Process will read from /dev/null
 								1 => Array('pipe', 'w'), // Process will write to STDOUT pipe
 								2 => Array('pipe', 'w')  // Process will write to STDERR pipe
 							);
@@ -847,8 +847,10 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 			// Check the status of the backup every 5 seconds...
+			$streamContents = '';
+			stream_set_blocking($mergePipes[2], 0);
 			do {
-
+				$streamContents .= stream_get_contents($mergePipes[2]);
 				if( ! ( $mergeStatus = proc_get_status($mergeProc) ) ) {
 					$this->error = 'backupSnapshotMerger->merge: '."Error: Unable to retrieve status on merge process.";
 					return false;
@@ -861,7 +863,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			if($mergeStatus['exitcode'] <> 0 ) {
 				$this->error = 'backupSnapshotMerger->merge: '."Error: There was an error merging snapshots - The process returned code ".$mergeStatus['exitcode'].".\n".
 								"The command issues was:\n".$mergeCommand."\n".
-								"The output is as follows:\n".stream_get_contents($mergePipes[2]);
+								"The output is as follows:\n".$streamContents;
 				return false;
 			}
 

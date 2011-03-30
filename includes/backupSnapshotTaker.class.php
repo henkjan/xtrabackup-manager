@@ -238,7 +238,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				
 				// Set up how we'll interact with the IO file handlers of the process
 				$xbDescriptors = Array(
-									0 => Array('pipe', 'r'), // Process will read from STDIN pipe
+									0 => Array('file', '/dev/null', 'r'), // Process will read from /dev/null
 									1 => Array('pipe', 'w'), // Process will write to STDOUT pipe
 									2 => Array('pipe', 'w')  // Process will write to STDERR pipe
 								);
@@ -269,8 +269,12 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				}   
 						
 				// Check the status of the backup every 5 seconds...
+				$streamContents = '';
+				stream_set_blocking($xbPipes[2], 0);
 				do {
-				
+
+					$streamContents .= stream_get_contents($xbPipes[2]);
+
 					if( ! ( $xbStatus = proc_get_status($xbProc) ) ) {
 						return $this->errorExit('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to retrieve status on backup process.", $runningBackup, $snapshot);
 					}
@@ -281,7 +285,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				if($xbStatus['exitcode'] <> 0 ) {
 					return $this->errorExit('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: There was an error backing up - The process returned code ".$xbStatus['exitcode'].".".
-											" The output from the backup is as follows:\n".stream_get_contents($xbPipes[2]), $runningBackup, $snapshot);
+											" The output from the backup is as follows:\n".$streamContents, $runningBackup, $snapshot);
 				}
 
 
@@ -291,7 +295,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				echo "\nWe got STDERR: \n";
 				echo stream_get_contents($xbPipes[2]); */
 
-				$this->infolog->write("Xtrabackup completed staging the backup with the following output:\n".stream_get_contents($xbPipes[2]), XBM_LOG_INFO);
+				$this->infolog->write("Xtrabackup completed staging the backup with the following output:\n".$streamContents, XBM_LOG_INFO);
 
 
 				// Copy it to local machine
@@ -345,7 +349,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				// Set up how we'll interact with the IO file handlers of the process
 				$copyDescriptors = Array(
-									0 => Array('pipe', 'r'), // Process will read from STDIN pipe
+									0 => Array('file', '/dev/null', 'r'), // Process will read from /dev/null
 									1 => Array('pipe', 'w'), // Process will write to STDOUT pipe
 									2 => Array('pipe', 'w')  // Process will write to STDERR pipe
 								);
@@ -360,8 +364,10 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				}
 
 				// Check the status of the backup every 5 seconds...
+				$streamContents = '';
+				stream_set_blocking($copyPipes[2], 0);
 				do {
-
+					$streamContents .= stream_get_contents($copyPipes[2]);
 					if( ! ( $copyStatus = proc_get_status($copyProc) ) ) {
 						return $this->errorExit('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to retrieve status on copy process.", $runningBackup, $snapshot);
 					}
@@ -372,7 +378,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				if($copyStatus['exitcode'] <> 0 ) {
 					return $this->errorExit('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: There was an error copying files - The process returned code ".$copyStatus['exitcode'].".".
-											" The output from the backup is as follows:\n".stream_get_contents($copyPipes[2]), $runningBackup, $snapshot);
+											" The output from the backup is as follows:\n".$streamContents, $runningBackup, $snapshot);
 				}
 
 				/* For debugging...
@@ -394,7 +400,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				}
 
 
-				$this->infolog->write("Completed copying the backup via netcat with the following output:\n".stream_get_contents($copyPipes[2]), XBM_LOG_INFO);
+				$this->infolog->write("Completed copying the backup via netcat with the following output:\n".$streamContents, XBM_LOG_INFO);
 
 				// Now we must check to see if there is any cleanup needed 
 				// do we need to collapse/merge any snapshots to keep our retention levels right?
@@ -468,11 +474,15 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				// Info output
 				$this->infolog->write("Started Netcat (nc) listener on port ".$rbInfo['port']." to receive backup tar stream into directory $path ...", XBM_LOG_INFO);
 
+				// Find which binary we should use
+				if( ! ( $xbBinary = $scheduledBackup->getXtrabackupBinary() ) ) {
+					return $this->errorExit('backupSnapshotTaker->takeScheduledBackupSnapshot: '.$scheduledBackup->error, $runningBackup, $snapshot);
+				}
 
 				// Proceed with running the backup
 
 				// Build the command...
-				$xbCommand = 'ssh '.$sbInfo['backup_user'].'@'.$hostInfo['hostname']." 'innobackupex-1.5.1 --stream=tar ".$sbInfo['datadir_path']." --user=".$sbInfo['mysql_user'].
+				$xbCommand = 'ssh '.$sbInfo['backup_user'].'@'.$hostInfo['hostname']." 'innobackupex-1.5.1 --ibbackup=".$xbBinary." --stream=tar ".$sbInfo['datadir_path']." --user=".$sbInfo['mysql_user'].
 							" --password=".$sbInfo['mysql_password']." --slave-info ";
 
 				// If table locking for the backup is disabled add the --no-lock option to innobackupex
@@ -485,7 +495,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				// Set up how we'll interact with the IO file handlers of the process
 				$xbDescriptors = Array(
-									0 => Array('pipe', 'r'), // Process will read from STDIN pipe
+									0 => Array('file', '/dev/null', 'r'), // Process will read from /dev/null
 									1 => Array('pipe', 'w'), // Process will write to STDOUT pipe
 									2 => Array('pipe', 'w')  // Process will write to STDERR pipe
 								);
@@ -516,7 +526,10 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				}
 
 				// Check the status of the backup every 5 seconds...
+				$streamContents = '';
+				stream_set_blocking($xbPipes[2], 0);
 				do {
+					$streamContents .= stream_get_contents($xbPipes[2]);
 
 					if( ! ( $xbStatus = proc_get_status($xbProc) ) ) {
 						return $this->errorExit('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to retrieve status on backup process.", $runningBackup, $snapshot);
@@ -528,7 +541,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				if($xbStatus['exitcode'] <> 0 ) {
 					return $this->errorExit('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: There was an error backing up - The process returned code ".$xbStatus['exitcode'].".".
-											" The output from the backup is as follows:\n".stream_get_contents($xbPipes[2]), $runningBackup, $snapshot);
+											" The output from the backup is as follows:\n".$streamContents, $runningBackup, $snapshot);
 				} 
 
 
@@ -538,7 +551,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				echo "\nWe got STDERR: \n";
 				echo stream_get_contents($xbPipes[2]); */
 
-				$this->infolog->write("Xtrabackup completed with the following output:\n".stream_get_contents($xbPipes[2]), XBM_LOG_INFO);
+				$this->infolog->write("Xtrabackup completed with the following output:\n".$streamContents, XBM_LOG_INFO);
 
 				// Close out backup process (it should be killed already)
 				proc_close($xbProc);
@@ -557,9 +570,6 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					return $this->errorExit('backupSnapshotTaker->takeScheduledBackupSnapshot: '.$snapshot->error, $runningBackup, $snapshot);
 				}
 
-				if( ! ( $xbBinary = $scheduledBackup->getXtrabackupBinary() ) ) {
-					return $this->errorExit('backupSnapshotTaker->takeScheduledBackupSnapshot: '.$scheduledBackup->error, $runningBackup, $snapshot);
-				}
 
 				// Build the command for applying log
 				//$applyCommand = ' cd '.$path.' ; innobackupex-1.5.1 --apply-log --ibbackup='.$xbBinary.' --defaults-file=backup-my.cnf ./ 1>&2';
@@ -585,8 +595,10 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				}
 
 				// Check the status of the apply log every 5 seconds...
+				$streamContents = '';
+				stream_set_blocking($applyPipes[2], 0);
 				do {
-
+					$streamContents .= stream_get_contents($applyPipes[2]);
 					if( ! ( $applyStatus = proc_get_status($applyProc) ) ) {
 						return $this->errorExit('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to retrieve status on apply log process.", $runningBackup, $snapshot);
 					}
@@ -597,7 +609,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				if($applyStatus['exitcode'] <> 0 ) {
 					return $this->errorExit('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: There was an error applying logs - The process returned code ".$applyStatus['exitcode'].".".
-											" The output from the apply log process is as follows:\n".stream_get_contents($applyPipes[2]), $runningBackup, $snapshot);
+											" The output from the apply log process is as follows:\n".$streamContents, $runningBackup, $snapshot);
 				}
 
 
@@ -609,7 +621,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				echo stream_get_contents($applyPipes[2]); */
 
 				// Write output to infolog..
-				$this->infolog->write("Apply log process completed successfully with the following output:\n".stream_get_contents($applyPipes[2]), XBM_LOG_INFO);
+				$this->infolog->write("Apply log process completed successfully with the following output:\n".$streamContents, XBM_LOG_INFO);
 
 				// Close out backup process (it should be killed already)
 				proc_close($applyProc);
