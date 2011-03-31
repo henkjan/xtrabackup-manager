@@ -198,6 +198,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 		// Change the status of the backup snapshot
+		// Fail if the row already has this state and nothing is changed..
 		function setStatus($status) {
 			
 			if(!is_numeric($this->id)) {
@@ -217,10 +218,15 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			$sql = "UPDATE backup_snapshots SET status='".$conn->real_escape_string($status)."' ";
 
-			$sql .= " WHERE backup_snapshot_id=".$this->id;
+			$sql .= " WHERE backup_snapshot_id=".$this->id." AND status != '".$conn->real_escape_string($status)."'";
 
 			if( ! $conn->query($sql) ) {
 				$this->error = 'backupSnapshot->setStatus: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
+				return false;
+			}
+
+			if( $conn->affected_rows != 1 ) {
+				$this->error = 'backupSnapshot->setStatus: '."Error: Failed to change snapshot status to $status -- either it already had that status or the snapshot was not found.";
 				return false;
 			}
 
