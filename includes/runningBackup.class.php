@@ -25,6 +25,9 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 		function __construct($id = false) {
+			if( ($id !== false) && !is_numeric($id) ) {
+				throw new Exception('runningBackup->__construct: '."Error: Expected an integer id for this object and did not get one.");
+			}
 			$this->id = $id;
 			$this->log = false;
 		}
@@ -51,10 +54,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$dbGetter = new dbConnectionGetter();
 
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'runningBackup->init: '.$dbGetter->error;
-				return false;
-			}
+			$conn = $dbGetter->getConnection($this->log);
 
 
 			$portFinder = new portFinder();
@@ -68,11 +68,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				$attempts++;
 
-				if( ! $portFinder->findAvailablePort() ) {
-					$this->error = 'runningBackup->init: '.$portFinder->error;
-					return false;
-				}
-
+				$portFinder->findAvailablePort();
 
 				// If we didn't get a port for some reason, try again
 				if( $portFinder->availablePort === false ) {
@@ -101,8 +97,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						continue;
 
 					} else {
-						$this->error = 'runningBackuup->init: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-						return false;
+						throw new Exception('runningBackuup->init: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 					}
 				}
 
@@ -119,8 +114,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				$this->infolog->write("Was unable to allocate a port for the backup after $attempts attempts. Giving up!", XBM_LOG_ERROR);
 			}
 
-			$this->error = 'runningBackup->init: '."Error: Was unable to allocate a port for the backup after $attempts attempts. Gave up!";
-			return false;
+			throw new Exception('runningBackup->init: '."Error: Was unable to allocate a port for the backup after $attempts attempts. Gave up!");
 
 		}
 
@@ -130,26 +124,21 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
 			if(!is_numeric($this->id)) {
-				$this->error = 'runningBackup->getInfo: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('runningBackup->getInfo: '."Error: The ID for this object is not an integer.");
 			}
 
 
 			$dbGetter = new dbConnectionGetter();
 
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'runningBackup->getInfo: '.$dbGetter->error;
-				return false;
-			}
+			$conn = $dbGetter->getConnection($this->log);
 
 
 			$sql = "SELECT * FROM running_backups WHERE running_backup_id=".$this->id;
 
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'runningBackup->getInfo: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('runningBackup->getInfo: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 	
 			$info = $res->fetch_array();
@@ -165,30 +154,22 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
 			if(!is_numeric($this->id) ) {
-				$this->error = 'runningBackup->finish: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('runningBackup->finish: '."Error: The ID for this object is not an integer.");
 			}
 
 			$dbGetter = new dbConnectionGetter();
 
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'runningBackup->finish: '.$dbGetter->error;
-				return false;
-			}
+			$conn = $dbGetter->getConnection($this->log);
 
-			if( ! ( $info = $this->getInfo() ) ) {
-				$this->error = 'runningBackup->finish: '.$this->error;
-				return false;
-			}
+			$info = $this->getInfo();
 
 
 			// If we have a staging tmpdir -- try to remove it
 			if( isSet($this->remoteTempDir) && is_object($this->remoteTempDir) ) {
 
 				if( ! $this->remoteTempDir->destroy() ) {
-					$this->error = 'runningBackup->finish: '.$this->remoteTempDir->error;
-					return false;
+					throw new Exception('runningBackup->finish: '.$this->remoteTempDir->error);
 				}
 
 			}
@@ -196,8 +177,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$sql = "DELETE FROM running_backups WHERE running_backup_id=".$this->id;
 
 			if( ! $conn->query($sql) ) {
-				$this->error = 'runningBackup->finish: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('runningBackup->finish: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			$this->infolog->write("Released lock on port ".$info['port'].".", XBM_LOG_INFO);
@@ -213,61 +193,38 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
 			if(!is_numeric($this->id) ) {
-				$this->error = 'runningBackup->getStagingTmpdir: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('runningBackup->getStagingTmpdir: '."Error: The ID for this object is not an integer.");
 			}
 
 			$dbGetter = new dbConnectionGetter();
 
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'runningBackup->getStagingTmpdir: '.$dbGetter->error;
-				return false;
-			}
+			$conn = $dbGetter->getConnection($this->log);
 
 
-			if( ! ( $info = $this->getInfo() ) ) {
-				$this->error = 'runningBackup->getStagingTmpdir: '.$this->error;
-				return false;
-			}
+			$info = $this->getInfo();
 
 			// Collect the info we need to connect to the remote host 
 			$backupGetter = new scheduledBackupGetter();
 
-			if( ! ( $scheduledBackup = $backupGetter->getById($info['scheduled_backup_id']) ) ) {
-				$this->error = 'runningBackup->getStagingTmpdir: '.$backupGetter->error;
-				return false;
-			}
+			$scheduledBackup = $backupGetter->getById($info['scheduled_backup_id']);
 
-			if( ! ( $sbInfo = $scheduledBackup->getInfo() ) ) {
-				$this->error = 'runningBackup->getStagingTmpdir: '.$scheduledBackup->error;
-				return false;
-			}
+			$sbInfo = $scheduledBackup->getInfo();
 
-			if( ! ( $host = $scheduledBackup->getHost() ) ) {
-				$this->error = 'runningBackup->getStagingTmpdir: '.$scheduledBackup->error;
-				return false;
-			}
+			$host = $scheduledBackup->getHost();
 
-			if( ! ( $hostInfo = $host->getInfo() ) ) {
-				$this->error = 'runningBackup->getStagingTmpdir: '.$host->error;
-				return false;
-			}
+			$hostInfo = $host->getInfo();
 
 			$this->remoteTempDir = new remoteTempDir();
 
-			if( ! ( $tempDir = $this->remoteTempDir->init($hostInfo['hostname'], $sbInfo['backup_user'], $hostInfo['staging_path'], 'xbm-') ) ) {
-				$this->error = 'runningBackup->getStagingTmpdir: '.$this->remoteTempDir->error;
-				return false;
-			}
+			$tempDir = $this->remoteTempDir->init($hostInfo['hostname'], $sbInfo['backup_user'], $hostInfo['staging_path'], 'xbm-');
 
 			// Put the path into the DB
 
 			$sql = "UPDATE running_backups SET staging_tmpdir='".$conn->real_escape_string($tempDir)."' WHERE running_backup_id=".$this->id;
 
 			if( ! $conn->query($sql) ) {
-				$this->error = 'runningBackup->getStagingTmpdir: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('runningBackup->getStagingTmpdir: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			return $tempDir;

@@ -23,7 +23,6 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	class logStream {
 
 		function __construct($filename, $verbose, $level = 0) {
-			$this->error = '';
 			$this->filename = $filename;
 			$this->verbose = $verbose;
 			$this->open = false;
@@ -50,12 +49,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			// If we didn't open, then open for writing.
 			if($this->filename !== false) {
 				if( ! $this->open ) {
-					if( ! $this->open() ) {
-						
-						$this->error = 'logStream->write: '.$this->error;
-						echo $this->error;
-						return false;
-					}
+					$this->open();
 				}
 			}
 
@@ -65,8 +59,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			if($this->filename !== false) {
 				if( ! fwrite($this->fp, $toWrite) ) {
-					$this->error = 'logStream->write: '."Error: Failed attempt to write to log file - $this->filename";
-					return false;
+					throw new Exception('logStream->write: '."Error: Failed attempt to write to log file - $this->filename");
 				}
 			}
 
@@ -82,13 +75,12 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			if($this->filename === false) {
 				$this->open = true;
-				return;
+				return true;
 			}
 
 			if( ! ($this->fp = @fopen($this->filename, 'a') ) ) {
 				// Could not open logStream for writing.
-				$this->error = 'logStream->open: '."Error: Failed to open log file - $this->filename";
-				return false;
+				throw new Exception('logStream->open: '."Error: Failed to open log file - $this->filename");
 			} else {
 				$this->open = true;
 			}

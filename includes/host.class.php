@@ -25,6 +25,9 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 		function __construct($id) {
+			if(!is_numeric($id) ) {
+				throw new Exception('host->__construct: '."Error: The ID for this object is not an integer.");
+			}
 			$this->id = $id;
 			$this->active = NULL;
 			$this->log = false;
@@ -41,26 +44,21 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
 			if(!is_numeric($this->id)) {
-				$this->error = 'host->getInfo: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('host->getInfo: '."Error: The ID for this object is not an integer.");
 			}
 
 
 			$dbGetter = new dbConnectionGetter($config);
 
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'host->getInfo: '.$dbGetter->error;
-				return false;
-			}
+			$conn = $dbGetter->getConnection($this->log);
 
 
 			$sql = "SELECT * FROM hosts WHERE host_id=".$this->id;
 
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'host->getInfo: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('host->getInfo: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 	
 			$info = $res->fetch_array();
@@ -78,18 +76,14 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			$dbGetter = new dbConnectionGetter($config);
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'host->getScheduledBackups: '.$dbGetter->error;
-				return false;
-			}
+			$conn = $dbGetter->getConnection($this->log);
 
 
 			$sql = "SELECT scheduled_backup_id FROM scheduled_backups WHERE host_id=".$this->id;
 
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'host->getScheduledBackups: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('host->getScheduledBackups: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			$scheduledBackups = Array();
@@ -101,20 +95,17 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		}
 
-		// Populate this->active with true/false depending on active status of host
-		function pollActive() {
-			if( ! ($info = $this->getInfo() ) ) {
-				$this->error = 'host->pollActive: '.$this->error;
+		// Return true or false 
+		function isActive() {
+
+			$info = $this->getInfo();
+
+			if($info['active'] == 'Y') {
+				return true;
+			} else {
 				return false;
 			}
 
-			if($info['active'] == 'Y') {
-				$this->active = true;
-			} else {
-				$this->active = false;
-			}
-
-			return true;
 		}
 
 
@@ -124,26 +115,21 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
 			if(!is_numeric($this->id)) {
-				$this->error = 'host->getRunningBackups: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('host->getRunningBackups: '."Error: The ID for this object is not an integer.");
 			}
 
 
 			$dbGetter = new dbConnectionGetter($config);
 
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'host->getRunningBackups: '.$dbGetter->error;
-				return false;
-			}
+			$conn = $dbGetter->getConnection($this->log);
 
 
 			$sql = "SELECT running_backup_id FROM running_backups WHERE host_id=".$this->id;
 
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'host->getRunningBackups: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('host->getRunningBackups: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			$runningBackups = Array();

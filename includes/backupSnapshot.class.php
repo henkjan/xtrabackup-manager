@@ -23,10 +23,13 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	class backupSnapshot {
 
 
-		function __construct($id = NULL) {
+		function __construct($id = false) {
+
+			if( ($id !== false) && !is_numeric($id)) {
+				throw new Exception('backupSnapshot->__construct: '."Error: Expected a numeric id and did not get one.");
+			}
 			$this->id = $id;
 			$this->log = false;
-			$this->error = NULL;
 			$this->scheduledBackup = NULL;
 		}
 
@@ -40,8 +43,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
 			if(!is_numeric($scheduledBackup->id) ) {
-				$this->error = 'backupSnapshot->init: '."Error: Expected ScheduledBackup with a numeric ID and did not get one.";
-				return false;
+				throw new Exception('backupSnapshot->init: '."Error: Expected ScheduledBackup with a numeric ID and did not get one.");
 			}
 
 			$this->scheduledBackup = $scheduledBackup;
@@ -50,8 +52,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'backupSnapshot->init: '.$dbGetter->error;
-				return false;
+				throw new Exception('backupSnapshot->init: '.$dbGetter->error);
 			}
 
 
@@ -63,8 +64,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			} else {
 
 				if(!is_numeric($parentId) ) {
-					$this->error = 'backupSnapshot->init: '."Error: Expected numeric parent ScheduledBackup ID and did not get one.";
-					return false;
+					throw new Exception('backupSnapshot->init: '."Error: Expected numeric parent ScheduledBackup ID and did not get one.");
 				}
 
 				$sql = "INSERT INTO backup_snapshots (scheduled_backup_id, type, creation_method, parent_snapshot_id) VALUES 
@@ -74,22 +74,17 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'backupSnapshot->init: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('backupSnapshot->init: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			$this->id = $conn->insert_id;
 
 			// Get the path for this snapshot
-			if( ! ($path = $this->getPath() ) ) {
-				$this->error = 'backupSnapshot->init: '.$this->error;
-				return false;
-			}
+			$path = $this->getPath();
 
 			// Create the dir for the hostname/snapshotId
 			if(!mkdir($path, 0700, true) ) {
-				$this->error = 'backupSnapshot->init: '."Error: Could not create the directory for this snapshot at ".$path." .";
-				return false;
+				throw new Exception('backupSnapshot->init: '."Error: Could not create the directory for this snapshot at ".$path." .");
 			}
 
 			return true;
@@ -100,16 +95,13 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		function getScheduledBackup() {
 
             if(!is_object($this->scheduledBackup) ) {
-                if( ! ( $info = $this->getInfo() ) ) {
-                    $this->error = 'backupSnapshot->getScheduledBackup: '.$this->error;
-                    return false;
-                }   
+
+                $info = $this->getInfo();
                 
                 $scheduledBackupGetter = new scheduledBackupGetter();
-                if( ! ($this->scheduledBackup = $scheduledBackupGetter->getById($info['scheduled_backup_id']) ) ) {
-                    $this->error = 'backupSnapshot->getScheduledBackup: '.$this->error;
-                    return false;
-                }   
+
+                $this->scheduledBackup = $scheduledBackupGetter->getById($info['scheduled_backup_id']);
+
             }   
 
 
@@ -122,38 +114,23 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		function getPath() {
 
 
-			if( ! ( $scheduledBackup = $this->getScheduledBackup() ) ) {
-				$this->error = 'backupSnapshot->getPath: '.$this->error;
-				return false;
-			}
+			$scheduledBackup = $this->getScheduledBackup();
 
 			// Get the host and info about it
-			if( ! ($host = $scheduledBackup->getHost() ) ) {
-				$this->error = 'backupSnapshot->getPath: '.$scheduledBackup->error;
-				return false;
-			}
+			$host = $scheduledBackup->getHost();
 
-			if( ! ($hostInfo = $host->getInfo() ) ) {
-				$this->error = 'backupSnapshot->getPath: '.$host->error;
-				return false;
-			}
+			$hostInfo = $host->getInfo();
 
 
 			// Get the volume and info about it
-			if( ! ($volume = $scheduledBackup->getVolume() ) ) {
-				$this->error = 'backupSnapshot->getPath: '.$scheduledBackup->error;
-				return false;
-			}
+			$volume = $scheduledBackup->getVolume();
 
-			if( ! ($volumeInfo = $volume->getInfo() ) ) {
-				$this->error = 'backupSnapshot->getPath: '.$volume->error;
-				return false;
-			}			
+			$volumeInfo = $volume->getInfo();
+
 
 			// Check to see that the volume is a directory first
 			if( !is_dir($volumeInfo['path']) ) {
-				$this->error = 'backupSnapshot->getPath: '."Error: The storage volume at ".$volumeInfo['path']." is not a valid directory.";
-				return false;
+				throw new Exception('backupSnapshot->getPath: '."Error: The storage volume at ".$volumeInfo['path']." is not a valid directory.");
 			}
 
 
@@ -168,26 +145,19 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
 			if(!is_numeric($this->id)) {
-				$this->error = 'backupSnapshot->getInfo: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('backupSnapshot->getInfo: '."Error: The ID for this object is not an integer.");
 			}
 
 
 			$dbGetter = new dbConnectionGetter();
 
-
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'backupSnapshot->getInfo: '.$dbGetter->error;
-				return false;
-			}
-
+			$conn = $dbGetter->getConnection($this->log);
 
 			$sql = "SELECT * FROM backup_snapshots WHERE backup_snapshot_id=".$this->id;
 
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'backupSnapshot->getInfo: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('backupSnapshot->getInfo: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 	
 			$info = $res->fetch_array();
@@ -202,18 +172,14 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		function setStatus($status) {
 			
 			if(!is_numeric($this->id)) {
-				$this->error = 'backupSnapshot->setStatus: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('backupSnapshot->setStatus: '."Error: The ID for this object is not an integer.");
 			}
 
 
 			$dbGetter = new dbConnectionGetter();
 
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'backupSnapshot->setStatus: '.$dbGetter->error;
-				return false;
-			}
+			$conn = $dbGetter->getConnection($this->log);
 
 
 			$sql = "UPDATE backup_snapshots SET status='".$conn->real_escape_string($status)."' ";
@@ -221,13 +187,11 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$sql .= " WHERE backup_snapshot_id=".$this->id." AND status != '".$conn->real_escape_string($status)."'";
 
 			if( ! $conn->query($sql) ) {
-				$this->error = 'backupSnapshot->setStatus: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('backupSnapshot->setStatus: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			if( $conn->affected_rows != 1 ) {
-				$this->error = 'backupSnapshot->setStatus: '."Error: Failed to change snapshot status to $status -- either it already had that status or the snapshot was not found.";
-				return false;
+				throw new Exception('backupSnapshot->setStatus: '."Error: Failed to change snapshot status to $status -- either it already had that status or the snapshot was not found.");
 			}
 
 			return true;
@@ -239,18 +203,14 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		function setSnapshotTime($snapshotTime = false) {
 
             if(!is_numeric($this->id)) {
-                $this->error = 'backupSnapshot->setSnapshotTime: '."Error: The ID for this object is not an integer.";
-                return false;
+                throw new Exception('backupSnapshot->setSnapshotTime: '."Error: The ID for this object is not an integer.");
             }
 
 
             $dbGetter = new dbConnectionGetter();
 
 
-            if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-                $this->error = 'backupSnapshot->setSnapshotTime: '.$dbGetter->error;
-                return false;
-            }
+            $conn = $dbGetter->getConnection($this->log);
 
 			if($snapshotTime === false) {
 				$snapshotTime = 'NOW()';
@@ -261,8 +221,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
             $sql .= " WHERE backup_snapshot_id=".$this->id;
 
             if( ! $conn->query($sql) ) {
-                $this->error = 'backupSnapshot->setSnapshotTime: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-                return false;
+                throw new Exception('backupSnapshot->setSnapshotTime: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
             }
 
             return true;
@@ -274,14 +233,10 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		function deleteFiles() {
 
 			// Get the path
-			if( ! ( $path = $this->getPath() ) ) {
-				$this->error = 'backupSnapshot->deleteFiles: '.$this->error;
-				return false;
-			}
+			$path = $this->getPath();
 
 			if( ( strlen($path) == 0 ) || $path == '/' ) {
-				$this->error = 'backupSnapshot->deleteFiles: '."Error: Detected unsafe path for this snapshot to attempt to perform recursive delete on. Aborting.";
-				return false;
+				throw new Exception('backupSnapshot->deleteFiles: '."Error: Detected unsafe path for this snapshot to attempt to perform recursive delete on. Aborting.");
 			}
 
 			if(!is_dir($path)) {
@@ -289,10 +244,8 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			$deleter = new recursiveDeleter();
-			if( ! $deleter->delTree($path.'/') ) {
-				$this->error = 'backupSnapshot->deleteFiles: '.$deleter->error;
-				return false;
-			}
+
+			$deleter->delTree($path.'/');
 
 			return true;
 		} 
@@ -303,29 +256,22 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			// Read the to_lsn value from the xtrabackup_checkpoints file in the backup dir
 
-			if( ! ( $path = $this->getPath() ) ) {
-				$this->error = 'backupSnapshot->getLsn: '.$this->error;
-				return false;
-			}
+			$path = $this->getPath();
 	
 			if(!is_file($path.'/xtrabackup_checkpoints')) {
-				$this->error = 'backupSnapshot->getLsn: '."Error: Could not find file ".$path."/xtrabackup_checkpoints for log sequence information.";
-				return false;
+				throw new Exception('backupSnapshot->getLsn: '."Error: Could not find file ".$path."/xtrabackup_checkpoints for log sequence information.");
 			}
 
 			if( ! ( $file = file_get_contents($path.'/xtrabackup_checkpoints') ) ) {
-				$this->error = 'backupSnapshot->getLsn: '."Error: Could not read file ".$path."/xtrabackup_checkpoints for log sequence information.";
-				return false;
+				throw new Exception('backupSnapshot->getLsn: '."Error: Could not read file ".$path."/xtrabackup_checkpoints for log sequence information.");
 			}
 
 			if( preg_match('/to_lsn = ([0-9]+:[0-9]+|[0-9]+)/', $file, $matches) == 0 ) {
-                $this->error = 'backupSnapshot->getLsn: '."Error: Could find log sequence information in file: ".$path."/xtrabackup_checkpoints";
-                return false;
+                throw new Exception('backupSnapshot->getLsn: '."Error: Could find log sequence information in file: ".$path."/xtrabackup_checkpoints");
 			}
 
 			if( !isSet($matches[1]) || strlen($matches[1]) == 0 ) {
-                $this->error = 'backupSnapshot->getLsn: '."Error: Could find log sequence information in file: ".$path."/xtrabackup_checkpoints";
-                return false;
+                throw new Exception('backupSnapshot->getLsn: '."Error: Could find log sequence information in file: ".$path."/xtrabackup_checkpoints");
 			}
 
 			return $matches[1];
@@ -338,28 +284,22 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
             if(!is_numeric($this->id)) {
-                $this->error = 'backupSnapshot->assignChildrenNewParent: '."Error: The ID for this object is not an integer.";
-                return false;
+                throw new Exception('backupSnapshot->assignChildrenNewParent: '."Error: The ID for this object is not an integer.");
             }
 
 			if(!is_numeric($parentId) ) {
-				$this->error = 'backupSnapshot->assignChildrenNewParent: '."Error: Expected numeric value for new parent to assign to children of this snapshot, but did not get one.";
-				return false;
+				throw new Exception('backupSnapshot->assignChildrenNewParent: '."Error: Expected numeric value for new parent to assign to children of this snapshot, but did not get one.");
 			}
 
             $dbGetter = new dbConnectionGetter();
 
-            if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-                $this->error = 'backupSnapshot->assignChildrenNewParent: '.$dbGetter->error;
-                return false;
-            }
+            $conn = $dbGetter->getConnection($this->log);
 
             $sql = "UPDATE backup_snapshots SET parent_snapshot_id=".$parentId." WHERE parent_snapshot_id=".$this->id;
 
 
             if( ! $conn->query($sql) ) {
-                $this->error = 'backupSnapshot->assignChildrenNewParent: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-                return false;
+                throw new Exception('backupSnapshot->assignChildrenNewParent: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
             }
 
             return true;

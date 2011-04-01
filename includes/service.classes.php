@@ -24,7 +24,6 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	class hostGetter {
 
 		function __construct() {
-			$this->error = '';
 			$this->log = false;
 		}
 
@@ -40,11 +39,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$dbGetter = new dbConnectionGetter();
 
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'hostGetter->getAll: '.$dbGetter->error;
-				return false;
-			}
-
+			$conn = $dbGetter->getConnection($this->log);
 
 			$sql = "SELECT host_id FROM hosts";
 
@@ -53,8 +48,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'hostGetter->getAll: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('hostGetter->getAll: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			$hosts = Array();
@@ -74,29 +68,25 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
 			if(!is_numeric($id) ) {
-				$this->error = 'hostGetter->getById: '."Error: Expected a numeric ID as a parameter, but did not get one.";
-				return false;
+				throw new Exception('hostGetter->getById: '."Error: Expected a numeric ID as a parameter, but did not get one.");
 			}
 
 			$dbGetter = new dbConnectionGetter();
 
 
 			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'hostGetter->getById: '.$dbGetter->error;
-				return false;
+				throw new Exception('hostGetter->getById: '.$dbGetter->error);
 			}
 
 
 			$sql = "SELECT host_id FROM hosts WHERE host_id=".$id;
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'hostGetter->getById: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('hostGetter->getById: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			if($res->num_rows != 1 ) {
-				$this->error = 'hostGetter->getById: '."Error: Could not retrieve a Host with ID $id.";
-				return false;
+				throw new Exception('hostGetter->getById: '."Error: Could not retrieve a Host with ID $id.");
 			}
 
 			$host = new host($id);
@@ -112,7 +102,6 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	class volumeGetter {
 
 		function __construct() {
-			$this->error = '';
 			$this->log = false;
 		}
 		
@@ -127,18 +116,13 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$dbGetter = new dbConnectionGetter();
 
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'volumeGetter->getAllVolumes: '.$dbGetter->error;
-				return false;
-			}
-
+			$conn = $dbGetter->getConnection($this->log);
 
 			$sql = "SELECT backup_volume_id FROM backup_volumes";
 
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'volumeGetter->getAllVolumes: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('volumeGetter->getAllVolumes: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			$volumes = Array();
@@ -158,28 +142,21 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
 			if(!is_numeric($id) ) {
-				$this->error = 'volumeGetter->getById: '."Error: Expected a numeric ID as a parameter, but did not get one.";
-				return false;
+				throw new Exception('volumeGetter->getById: '."Error: Expected a numeric ID as a parameter, but did not get one.");
 			}
 
 			$dbGetter = new dbConnectionGetter();
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'volumeGetter->getById: '.$dbGetter->error;
-				return false;
-			}
-
+			$conn = $dbGetter->getConnection($this->log);
 
 			$sql = "SELECT backup_volume_id FROM backup_volumes WHERE backup_volume_id=".$id;
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'volumeGetter->getById: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('volumeGetter->getById: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			if($res->num_rows != 1 ) {
-				$this->error = 'volumeGetter->getById: '."Error: Could not retrieve a Volume with ID $id.";
-				return false;
+				throw new Exception('volumeGetter->getById: '."Error: Could not retrieve a Volume with ID $id.");
 			}
 
 			$volume = new backupVolume($id);
@@ -195,7 +172,6 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	class scheduledBackupGetter {
 
 		function __construct() {
-			$this->error = '';
 			$this->log = false;
 		}
 
@@ -211,18 +187,12 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$dbGetter = new dbConnectionGetter();
 
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'scheduledBackupGetter->getAll: '.$dbGetter->error;
-				return false;
-			}
-
+			$conn = $dbGetter->getConnection($this->log);
 
 			$sql = "SELECT scheduled_backup_id FROM scheduled_backups";
 
-
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'scheduledBackupGetter->getAll: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('scheduledBackupGetter->getAll: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			$scheduledBackups = Array();
@@ -242,29 +212,22 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
 			if(!is_numeric($id) ) {
-				$this->error = 'scheduledBackupGetter->getById: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('scheduledBackupGetter->getById: '."Error: The ID for this object is not an integer.");
 			}
 
 			$dbGetter = new dbConnectionGetter();
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'scheduledBackupGetter->getById: '.$dbGetter->error;
-				return false;
-			}
-
+			$conn = $dbGetter->getConnection($this->log);
 
 			$sql = "SELECT scheduled_backup_id FROM scheduled_backups WHERE scheduled_backup_id=".$id;
 
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'scheduledBackupGetter->getById: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('scheduledBackupGetter->getById: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			if($res->num_rows != 1) {
-				$this->error = 'scheduledBackupGetter->getById: '."Error: Could not retrieve a Scheduled Backup with ID $id.";
-				return false;
+				throw new Exception('scheduledBackupGetter->getById: '."Error: Could not retrieve a Scheduled Backup with ID $id.");
 			}
 
 			$scheduledBackup = new scheduledBackup($id);
@@ -279,7 +242,6 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	class mysqlTypeGetter {
 
 		function __construct() {
-			$this->error = '';
 			$this->log = false;
 		}
 
@@ -290,29 +252,22 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		function getById($id) {
 
 			if(!is_numeric($id) ) {
-				$this->error = 'mysqlTypeGetter->getById: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('mysqlTypeGetter->getById: '."Error: The ID for this object is not an integer.");
 			}   
 			
 			$dbGetter = new dbConnectionGetter();
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'mysqlTypeGetter->getById: '.$dbGetter->error;
-				return false;
-			}
-
+			$conn = $dbGetter->getConnection($this->log);
 
 			$sql = "SELECT mysql_type_id FROM mysql_types WHERE mysql_type_id=".$id;
 
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'mysqlTypeGetter->getById: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('mysqlTypeGetter->getById: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			if($res->num_rows != 1) {
-				$this->error = 'mysqlTypeGetter->getById: '."Error: Could not retrieve a MySQL Type with ID $id.";
-				return false;
+				throw new Exception('mysqlTypeGetter->getById: '."Error: Could not retrieve a MySQL Type with ID $id.");
 			}
 
 			$mysqlType = new mysqlType($id);
@@ -327,31 +282,24 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	// Service class to sync all backup schedules to crontab
 	class cronFlusher {
 
-		function __construct() {
-			$this->error = '';
-		}
 
 		function flushSchedule() {
 
 			global $config;
 
-			if( ( $cron = $this->buildCron() ) === false) {
-				return false;
-			}
+			$cron = $this->buildCron();
 
 			$tmpName = tempnam($config['SYSTEM']['tmpdir'], 'xbmcron');
 			$fp = @fopen($tmpName, "w");
 
 			// Validate we got a resource OK
 			if(!is_resource($fp)) {
-				$this->error = 'cronFlusher->flushSchedule: '."Error: Could not open tempfile for writing - $tmpName";
-				return false;
+				throw new Exception('cronFlusher->flushSchedule: '."Error: Could not open tempfile for writing - $tmpName");
 			}
 
 		
 			if( fwrite($fp, $cron) === false ) {
-				$this->error = 'cronFlusher->flushSchedule: '."Error: Could not write to tempfile - $tmpName";
-				return false;
+				throw new Exception('cronFlusher->flushSchedule: '."Error: Could not write to tempfile - $tmpName");
 			}
 
 			fclose($fp);
@@ -366,8 +314,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			if($returnVar != 0 ) {
-				$this->error = 'cronFlusher->flushSchedule: '."Error: Could not install crontab with file - $tmpName - Got error $returnVar and output:\n".implode("\n", $output);
-				return false;
+				throw new Exception('cronFlusher->flushSchedule: '."Error: Could not install crontab with file - $tmpName - Got error $returnVar and output:\n".implode("\n", $output));
 			}
 
 			unlink($tmpName);
@@ -386,20 +333,14 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			// Get All Hosts
 			$hostGetter = new hostGetter();
-			if( ( $hosts = $hostGetter->getAll() ) === false ) {
-				$this->error = 'cronFlusher->buildCron: '.$hostGetter->error;
-				return false;
-			}
+			$hosts = $hostGetter->getAll();
 
 			
 			// Cycle through each host...
 			foreach( $hosts as $host ) {
 
 				// Get host info ..
-				if( ! ($hostInfo = $host->getInfo() ) ) {
-					$this->error = 'cronFlusher->buildCron: '.$host->error;
-					return false;
-				}
+				$hostInfo = $host->getInfo();
 
 				if($hostInfo['active'] == 'Y' ) {
 					$cron .= "\n# Host - ".$hostInfo['hostname']."\n";
@@ -408,18 +349,12 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				}
 
 				// Get scheduled backups for host...
-				if( ($scheduledBackups = $host->getScheduledBackups() ) === false ) {
-					$this->error = 'cronFlusher->buildCron: '.$host->error;
-					return false;
-				}
+				$scheduledBackups = $host->getScheduledBackups();
 
 				// Cycle through each scheduled backup ..
 				foreach( $scheduledBackups as $scheduledBackup ) {
 					// Get info for the scheduled backup ..
-					if( ! ($scheduledBackupInfo = $scheduledBackup->getInfo() ) ) {
-						$this->error = 'cronFlusher->buildCron: '.$scheduledBackup->error;
-						return false;
-					}
+					$scheduledBackupInfo = $scheduledBackup->getInfo();
 
 					if( $scheduledBackupInfo['active'] == 'Y' ) {
 						$cron .= "\n# Backup: ".$scheduledBackupInfo['name']."\n";
@@ -525,22 +460,16 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$dbGetter = new dbConnectionGetter();
 
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'portFinder->findAvailablePort: '.$dbGetter->error;
-				return false;
-			}
-
+			$conn = $dbGetter->getConnection($this->log);
 
 			$sql = "SELECT port FROM running_backups";
-
 
 			$count = 0;
 
 			while($this->availablePort === false && $count < $attempts) {
 
 				if( ! ($res = $conn->query($sql) ) ) {
-					$this->error = 'portFinder->findAvailablePort: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-					return false;
+					throw new Exception('portFinder->findAvailablePort: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 				}
 
 				$busyPorts = Array();
@@ -575,7 +504,6 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	class runningBackupGetter {
 
 		function __construct() {
-			$this->error = '';
 			$this->log = false;
 		}
 
@@ -592,18 +520,13 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$dbGetter = new dbConnectionGetter();
 			
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'runningBackupGetter->getAll: '.$dbGetter->error;
-				return false;
-			}   
+			$conn = $dbGetter->getConnection($this->log);
 			
 
 			$sql = "SELECT running_backup_id FROM running_backups";
 			
-
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'runningBackupGetter->getAll: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('runningBackupGetter->getAll: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}   
 			
 			$runningBackups = Array();
@@ -624,40 +547,30 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	// Service class to basically rm -rf a dirtree
 	class recursiveDeleter {
 
-		function __construct() {
-			$this->error = '';
-		}
-
 		// Recursively delete everything in a directory
 		function delTree($dir) {
 
 			if(!is_dir($dir) ) {
-				$this->error = 'recursiveDeleter->delTree: '."Error: Could not delete dir $dir - It is not a directory.";
-				return false;
+				throw new Exception('recursiveDeleter->delTree: '."Error: Could not delete dir $dir - It is not a directory.");
 			}
 
 			if( ( strlen($dir) == 0 ) || ( $dir == '/' ) ) {
-				$this->error = 'recursiveDeleter->delTree: '."Error: Detected attempt to delete unsafe path: $dir - Aborting.";
-				return false;
+				throw new Exception('recursiveDeleter->delTree: '."Error: Detected attempt to delete unsafe path: $dir - Aborting.");
 			}
 
 			$files = glob( $dir . '*', GLOB_MARK ); 
 
 			foreach( $files as $file ){ 
 				if( substr( $file, -1 ) == '/' ) {
-					if($this->delTree( $file ) == false ) {
-						return false;
-					}
+					$this->delTree( $file );
 				} else {
 					if( ! unlink( $file ) ) {
-						$this->error = 'recursiveDeleter->delTree: '."Error: Could not delete file: $file";
-						return false;
+						throw new Exception('recursiveDeleter->delTree: '."Error: Could not delete file: $file");
 					}
 				}
 			} 
 			if( ! rmdir( $dir ) ) {
-				$this->error = 'recursiveDeleter->delTree: '."Error: Could not rmdir() on $dir";
-				return false;
+				throw new Exception('recursiveDeleter->delTree: '."Error: Could not rmdir() on $dir");
 			}
 
 			return true;
@@ -671,7 +584,6 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	class backupSnapshotGetter {
 
 		function __construct() {
-			$this->error = '';
 			$this->log = false;
 		}
 		
@@ -682,29 +594,22 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		function getById($id) {
 				
 			if(!is_numeric($id) ) {
-				$this->error = 'backupSnapshotGetter->getById: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('backupSnapshotGetter->getById: '."Error: The ID for this object is not an integer.");
 			}
 			
 			$dbGetter = new dbConnectionGetter();
 				
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'backupSnapshotGetter->getById: '.$dbGetter->error;
-				return false;
-			}
-
+			$conn = $dbGetter->getConnection($this->log);
 
 			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE backup_snapshot_id=".$id;
 				
 				
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'backupSnapshotGetter->getById: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false; 
+				throw new Exception('backupSnapshotGetter->getById: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			if($res->num_rows != 1) {
-				$this->error = 'backupSnapshotGetter->getById: '."Error: Could not retrieve a Backup Snapshot with ID $id.";
-				return false;
+				throw new Exception('backupSnapshotGetter->getById: '."Error: Could not retrieve a Backup Snapshot with ID $id.");
 			}
 
 			$backupSnapshot = new backupSnapshot($id);
@@ -719,7 +624,6 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	class remoteTempDir {
 
 		function __construct() {
-			$this->error = '';
 		}
 
 		// Create the tmpdir remotely and return the path information
@@ -741,8 +645,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			} while ( ( $returnVar != 0 ) && $c < 5 );
 
 			if($c >= 5) {
-				$this->error = 'tempDirMaker->makeTempDir: '."Error: Gave up trying to create a temporary directory on ".$user."@".$host." after $c attempts. Last output:\n".implode("\n",$output);
-				return false;
+				throw new Exception('tempDirMaker->makeTempDir: '."Error: Gave up trying to create a temporary directory on ".$user."@".$host." after $c attempts. Last output:\n".implode("\n",$output));
 			}
 
 			$this->dir = $path;
@@ -755,13 +658,11 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 			if( !isSet($this->host) || !isSet($this->user) || !isSet($this->dir) ) {
-				$this->error = 'remoteTempDir->destroy: '."Error: Expected this object to be populated with host, user and dir, but did not find them.";
-				return false;
+				throw new Exception('remoteTempDir->destroy: '."Error: Expected this object to be populated with host, user and dir, but did not find them.");
 			}
 
 			if( (strlen($this->dir) == 0 ) || ($this->dir == '/') ) {
-				$this->error = 'remoteTempDir->destroy: '."Error: Detected possibly unsafe to rm -rf temp remote temp dir: ".$this->user."@".$this->host.':'.$this->dir;
-				return false;
+				throw new Exception('remoteTempDir->destroy: '."Error: Detected possibly unsafe to rm -rf temp remote temp dir: ".$this->user."@".$this->host.':'.$this->dir);
 			}
 
 
@@ -769,8 +670,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			@exec($cmd, $output, $returnVar);
 
 			if( $returnVar != 0 ) {
-				$this->error = 'remoteTempDir->destroy: '."Error: Encoutnered a problem removing remote temp dir: ".$this->user."@".$this->host.":".$this->dir."  Last output:\n".implode("\n",$output);
-				return false;
+				throw new Exception('remoteTempDir->destroy: '."Error: Encoutnered a problem removing remote temp dir: ".$this->user."@".$this->host.":".$this->dir."  Last output:\n".implode("\n",$output));
 			}
 
 			return true;
@@ -781,53 +681,94 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 	class backupSnapshotMerger {
 
-		function __construct() {
-			$this->error = '';
-		}
-
-		function merge($seedSnapshot, $deltaSnapshot) {
+		function mergeSnapshots($seedSnapshot, $deltaSnapshot) {
 
 			// Create a new snapshot entry
 
 			// Find the scheduled backup we are working in
-			if( ! ( $scheduledBackup = $seedSnapshot->getScheduledBackup() ) ) {
-				$this->error = 'backupSnapshotMerger->merge: '.$seedSnapshot->error;
-				return false;
-			}
+			$scheduledBackup = $seedSnapshot->getScheduledBackup();
 
 			$mergeSnapshot = new backupSnapshot();
 
-			if( $mergeSnapshot->init($scheduledBackup, 'SEED', 'MERGE') === false ) {
-				$this->error = 'backupSnapshotMerger->merge: '.$mergeSnapshot->error;
-				return false;
-			}
+			$mergeSnapshot->init($scheduledBackup, 'SEED', 'MERGE');
 
 
 			// Set status to merging
-			if( ! $mergeSnapshot->setStatus('MERGING') ) {
-				$this->error = 'backupSnapshotMerger->merge: '.$mergeSnapshot->error;
-				return false;
-			}
+			$mergeSnapshot->setStatus('MERGING');
 
 			// Merge incremental over seed
 
 			// Get paths for seed and delta
-			if( ! ($seedPath = $seedSnapshot->getPath() ) ) {
-				$this->error = 'backupSnapshotMerger->merge: '.$seedSnapshot->error;
-				return false;
-			}
+			$seedPath = $seedSnapshot->getPath();
 
-			if( ! ($deltaPath = $deltaSnapshot->getPath() ) ) {
-				$this->error = 'backupSnapshotMerger->merge: '.$deltaSnapshot->error;
-				return false;
-			}
+			$deltaPath = $deltaSnapshot->getPath();
 
 			// Find the xtrabackup binary to use
-			if( ! ($xbBinary = $scheduledBackup->getXtrabackupBinary() ) ) {
-				$this->error = 'backupSnapshotMerger->merge: '.$scheduledBackup->error;
-				return false;
+			$xbBinary = $scheduledBackup->getXtrabackupBinary();
+		
+
+			// Merge the snapshots by their paths
+			$this->mergePaths($seedPath, $deltaPath, $xbBinary);
+
+			// We have a backup entry with a directory - we will need to remove it before we rename
+			$mergePath = $mergeSnapshot->getPath();
+
+			if( ( $mergePath == '/' ) || ( strlen($mergePath) == 0 ) ) {
+				throw new Exception('backupSnapshotMerger->mergeSnapshots: '."Error: Detected unsafe path to remove: $mergePath");
 			}
-			
+
+			if( ! rmdir($mergePath) ) {
+				throw new Exception('backupSnapshotMerger->mergeSnapshots: '."Error: Unable to rmdir on: $mergePath");
+			}
+
+
+			// Rename the directory in place
+			if( ! rename($seedPath, $mergePath) ) {
+				throw new Exception('backupSnapshotMerger->mergeSnapshots: '."Error: Could not move seed from $seedPath to $mergePath - rename() failed.");
+			}
+
+			unset($output);
+			unset($returnVar);
+
+			// Remove the incremental files
+			// rm -rf on $deltaSnapshot->getPath...
+			$rmCmd = 'rm -rf '.$deltaPath;
+			exec($rmCmd, $output, $returnVar);
+
+			if( $returnVar <> 0 ) {
+				throw new Exception('backupSnapshotMerger->mergeSnapshots: '."Error: Could not remove old deltas with command: $rmCmd -- Got output:\n".implode("\n",$output));
+			}
+
+			// Set the time to the time of the $deltaSnapshot
+			$deltaInfo = $deltaSnapshot->getInfo();
+
+			$mergeSnapshot->setSnapshotTime($deltaInfo['snapshot_time']);
+
+			// Set any snapshot with the parent id of the merged delta to now have the parent id of the new merge snapshot
+
+			// get mergeInfo first
+			$mergeInfo = $mergeSnapshot->getInfo();
+
+			// reassign the children of the seed the new parent (merge)
+			$deltaSnapshot->assignChildrenNewParent($mergeInfo['backup_snapshot_id']);
+
+			// Set the status of the delta to MERGED
+			$deltaSnapshot->setStatus('MERGED');
+
+			// Set the status of the seed snapshot to MERGED
+			$seedSnapshot->setStatus('MERGED');
+
+			// Set status to COMPLETED
+			$mergeSnapshot->setStatus('COMPLETED');
+
+			return true;
+
+		}
+
+
+		// Merge the deltas from deltaPath into seedPath using xbBinary xtrabackup binary
+		function mergePaths($seedPath, $deltaPath, $xbBinary) {
+
 			// Actually kick off the process to do it here...
 			$mergeCommand = $xbBinary.' --prepare --apply-log-only --target-dir='.$seedPath.' --incremental-dir='.$deltaPath.' 1>&2';
 			
@@ -841,8 +782,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$mergeProc = proc_open($mergeCommand, $mergeDescriptors, $mergePipes);
 
 			if(!is_resource($mergeProc) ) {
-				$this->error = 'backupSnapshotMerger->merge: '."Error: Unable to merge deltas into seed with command: $mergeCommand";
-				return false;
+				throw new Exception('backupSnapshotMerger->mergePaths: '."Error: Unable to merge deltas into seed with command: $mergeCommand");
 			}
 
 
@@ -852,8 +792,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			do {
 				$streamContents .= stream_get_contents($mergePipes[2]);
 				if( ! ( $mergeStatus = proc_get_status($mergeProc) ) ) {
-					$this->error = 'backupSnapshotMerger->merge: '."Error: Unable to retrieve status on merge process.";
-					return false;
+					throw new Exception('backupSnapshotMerger->mergePaths: '."Error: Unable to retrieve status on merge process.");
 				}
 				sleep(5);
 
@@ -861,92 +800,10 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			// Check exit status
 			if($mergeStatus['exitcode'] <> 0 ) {
-				$this->error = 'backupSnapshotMerger->merge: '."Error: There was an error merging snapshots - The process returned code ".$mergeStatus['exitcode'].".\n".
+				throw new Exception('backupSnapshotMerger->mergePaths: '."Error: There was an error merging snapshots - The process returned code ".$mergeStatus['exitcode'].".\n".
 								"The command issues was:\n".$mergeCommand."\n".
-								"The output is as follows:\n".$streamContents;
-				return false;
+								"The output is as follows:\n".$streamContents);
 			}
-
-
-			// We have a backup entry with a directory - we will need to remove it before we rename
-			if( ! ( $mergePath = $mergeSnapshot->getPath() ) ) {
-
-				if( ( $mergePath == '/' ) || ( strlen($mergePath) == 0 ) ) {
-					$this->error = 'backupSnapshotMerger->merge: '."Error: Detected unsafe path to remove: $mergePath";
-					return false;
-				}
-
-				if( ! rmdir($mergePath) ) {
-					$this->error = 'backupSnapshotMerger->merge: '."Error: Unable to rmdir on: $mergePath";
-					return false;
-				}
-
-			}
-
-
-
-			// Rename the directory in place
-			if( ! rename($seedPath, $mergePath) ) {
-				$this->error = 'backupSnapshotMerger->merge: '."Error: Could not move seed from $seedPath to $mergePath - rename() failed.";
-				return false;
-			}
-
-			unset($output);
-			unset($returnVar);
-
-			// Remove the incremental files
-			// rm -rf on $deltaSnapshot->getPath...
-			$rmCmd = 'rm -rf '.$deltaPath;
-			exec($rmCmd, $output, $returnVar);
-
-			if( $returnVar <> 0 ) {
-				$this->error = 'backupSnapshotMerger->merge: '."Error: Could not remove old deltas with command: $rmCmd -- Got output:\n".implode("\n",$output);
-				return false;
-			}
-
-			// Set the time to the time of the $deltaSnapshot
-			if( ! ($deltaInfo = $deltaSnapshot->getInfo() ) ) {
-				$this->error = 'backupSnapshotMerger->merge: '.$deltaSnapshot->error;
-				return false;
-			}
-
-			if( ! $mergeSnapshot->setSnapshotTime($deltaInfo['snapshot_time']) ) {
-				$this->error = 'backupSnapshotMerger->merge: '.$mergeSnapshot->error;
-				return false;
-			}
-
-			// Set any snapshot with the parent id of the merged delta to now have the parent id of the new merge snapshot
-
-			// get mergeInfo first
-			if( ! ($mergeInfo = $mergeSnapshot->getInfo() ) ) {
-				$this->error = 'backupSnapshotMerger->merge: '.$mergeSnapshot->error;
-				return false;
-			}
-
-			// reassign the children of the seed the new parent (merge)
-			if( ! $deltaSnapshot->assignChildrenNewParent($mergeInfo['backup_snapshot_id']) ) {
-				$this->error = 'backupSnapshotMerger->merge: '.$deltaSnapshot->error;
-				return false;
-			}
-
-			// Set the status of the delta to MERGED
-			if( ! $deltaSnapshot->setStatus('MERGED') ) {
-				$this->error = 'backupSnapshotMerger->merge: '.$deltaSnapshot->error;
-				return false;
-			}			
-
-			// Set the status of the seed snapshot to MERGED
-			if( ! $seedSnapshot->setStatus('MERGED') ) {
-				$this->error = 'backupSnapshotMerger->merge: '.$seedSnapshot->error;
-				return false;
-			}
-
-			// Set status to COMPLETED
-			if( ! $mergeSnapshot->setStatus('COMPLETED') ) {
-				$this->error = 'backupSnapshotMerger->merge: '.$mergeSnapshot->error;
-				return false;
-			}
-
 
 			return true;
 

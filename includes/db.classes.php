@@ -24,9 +24,6 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 	class dbConnectionGetter {
 
-		function __construct() {
-			$this->error = '';
-		}
 
 		// Return a new dbConnection connection object to use to connect to the DB
 		function getConnection($logStream) {
@@ -57,9 +54,8 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			// Check for error connecting...
 			// We use mysqli_connect_error and errno instead of $conn->connect_error / errno because it was broken before PHP 5.2.9 and 5.3.0
 			if(mysqli_connect_error()) {
-				$this->error = 'dbConnectionGetter->getConnection: ' . "Error: Can't connect to MySQL (".mysqli_connect_errno().") - please check that settings in config.php are correct."
-					. $conn->connect_error;
-				return false;
+				throw new Exception('dbConnectionGetter->getConnection: ' . "Error: Can't connect to MySQL (".mysqli_connect_errno().") - please check that settings in config.php are correct."
+					. $conn->connect_error);
 			}
 
 			$conn->setLogStream($logStream);

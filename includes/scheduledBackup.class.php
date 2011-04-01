@@ -25,9 +25,11 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 		function __construct($id) {
+			if(!is_numeric($id)) {
+				throw new Exception('scheduledBackup->__construct'."Error: Expected a numeric ID for this object and did not get one.");
+			}
 			$this->id = $id;
 			$this->active = NULL;
-			$this->hasValidSeed = NULL;
 			$this->inactive_reason = '';
 			$this->log = false;
 			$this->isRunning = NULL;
@@ -43,26 +45,21 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
 			if(!is_numeric($this->id)) {
-				$this->error = 'scheduledBackup->getInfo: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('scheduledBackup->getInfo: '."Error: The ID for this object is not an integer.");
 			}
 
 
 			$dbGetter = new dbConnectionGetter($config);
 
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'scheduledBackup->getInfo: '.$dbGetter->error;
-				return false;
-			}
+			$conn = $dbGetter->getConnection($this->log);
 
 
 			$sql = "SELECT * FROM scheduled_backups WHERE scheduled_backup_id=".$this->id;
 
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'scheduledBackup->getInfo: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('scheduledBackup->getInfo: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 	
 			$info = $res->fetch_array();
@@ -72,45 +69,31 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 		// Sets this->active to true or false based on logic.
-		function pollActive() {
+		function isActive() {
 
-			if( ! ( $info = $this->getInfo() ) ) {
-				$this->error = 'scheduledBackup->pollActive: '.$this->error;
-				return false;
-			}
+			$info = $this->getInfo();
 
 			// Check first if this scheduled backup is active
 			if($info['active'] != 'Y') {
 
 				$this->inactive_reason = 'The Scheduled Backup is not active.';
-				$this->active = false;
-				return true;
+				return false;
 			} else {
 
 				// Then check to make sure that the host is active
-				if( ! ( $host = $this->getHost() ) ) {
-					$this->error = 'scheduledBackup->pollActive: '.$this->error;
-					return false;
-				}
+				$host = $this->getHost();
 
 				// Poll host being active...
-				if( ! $host->pollActive() ) {
-					$this->error = 'scheduledBackup->pollActive: '.$host->error;
+					// If it's not active..
+				if( $host->isActive() == false ) {
+					$this->inactive_reason = 'The Host is not active.';
 					return false;
 				} else {
-					// If it's not active..
-					if( $host->active == false ) {
-						$this->active = false;
-						$this->inactive_reason = 'The Host is not active.';
-						return true;
-					} else {
-					// Otherwise..
-						$this->active = true;
-						$this->inactive_reason = NULL;
-						return true;
-					}
-
+				// Otherwise..
+					$this->inactive_reason = NULL;
+					return true;
 				}
+
 
 			}
 			
@@ -120,16 +103,10 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		// Get the host object that this scheduledBackup is for	
 		function getHost() {
 
-			if( ! ( $info = $this->getInfo() ) ) {
-				$this->error = 'scheduledBackup->getHost: '.$this->error;
-				return false;
-			}
+			$info = $this->getInfo();
 
 			$hostGetter = new hostGetter();
-			if( ! ( $host = $hostGetter->getById($info['host_id']) ) ) {
-				$this->error = 'scheduledBackup->getHost: '.$this->error;
-				return false;
-			}
+			$host = $hostGetter->getById($info['host_id']);
 
 			return $host;
 
@@ -139,16 +116,10 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		// Get the volume object that this scheduledBackup is stored on
 		function getVolume() {
 
-			if( ! ( $info = $this->getInfo() ) ) {
-				$this->error = 'scheduledBackup->getVolume: '.$this->error;
-				return false;
-			}
+			$info = $this->getInfo();
 
 			$volumeGetter = new volumeGetter();
-			if( ! ( $volume = $volumeGetter->getById($info['backup_volume_id']) ) ) {
-				$this->error = 'scheduledBackup->getVolume: '.$this->error;
-				return false;
-			}
+			$volume = $volumeGetter->getById($info['backup_volume_id']);
 
 			return $volume;
 
@@ -159,109 +130,78 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		// based on the configured mysql_type of this scheduledBackup
 		function getXtrabackupBinary() {
 
-			if( ! ($info = $this->getInfo() ) ) {
-				$this->error = 'scheduledBackup->getXtrabackupBinary: '.$this->error;
-				return false;
-			}
-
+			$info = $this->getInfo();
 
 			$mysqlTypeGetter = new mysqlTypeGetter();
 			$mysqlTypeGetter->setLogStream($this->log);
 
-			if( ! ( $mysqlType = $mysqlTypeGetter->getById($info['mysql_type_id']) ) ) {
-				$this->error = 'scheduledBackup->getXtrabackupBinary: '.$mysqlTypeGetter->error;
-				return false;
-			}
+			$mysqlType = $mysqlTypeGetter->getById($info['mysql_type_id']);
 
-			if( ! ( $mysqlTypeInfo = $mysqlType->getInfo() ) ) {
-				$this->error = 'scheduledBackup->getXtrabackupBinary: '.$mysqlType->error;
-				return false;
-			}
+			$mysqlTypeInfo = $mysqlType->getInfo();
 
 			return $mysqlTypeInfo['xtrabackup_binary'];
 		}
 
 
 
-		// Find out if this scheduledBackup has a valid seed - put answer in hasValidSeed object var
-		// Puts the the backupSnapshot of the seed into the object var seedBackupSnapshot
-		function pollHasValidSeed() {
+		// Return the valid seed of this scheduledBackup or false otherwise
+		function getSeed() {
 
 			global $config;
 
 			if(!is_numeric($this->id)) {
-				$this->error = 'scheduledBackup->pollHasValidSeed: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('scheduledBackup->getSeed: '."Error: The ID for this object is not an integer.");
 			}   
 
 			$dbGetter = new dbConnectionGetter($config);
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'scheduledBackup->pollHasValidSeed: '.$dbGetter->error;
-				return false;
-			}
-
+			$conn = $dbGetter->getConnection($this->log);
 
 			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE scheduled_backup_id=".$this->id." AND type='SEED' AND status='COMPLETED'";
 
-
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'scheduledBackup->pollHasValidSeed: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('scheduledBackup->getSeed: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			if( $res->num_rows > 1 ) {
-				$this->error = 'scheduledBackup->pollHasValidSeed: '."Error: Found more than one valid seed for this backup. This should not happen.";
-				return false;
+				throw new Exception('scheduledBackup->getSeed: '."Error: Found more than one valid seed for this backup. This should not happen.");
 			} elseif( $res->num_rows == 1 ) {
 				$row = $res->fetch_array();
 				$snapshotGetter = new backupSnapshotGetter();
-				if( ! ( $this->seedBackupSnapshot = $snapshotGetter->getById($row['backup_snapshot_id']) ) ) {
-					$this->error = 'scheduledBackup->pollHasValidSeed: '.$snapshotGetter->error;
-					return false;
-				}
-				$this->hasValidSeed = true;
+				return $snapshotGetter->getById($row['backup_snapshot_id']);
 			} elseif( $res->num_rows == 0 ) {
-				$this->hasValidSeed = false;
+				return false;
 			}
 
-
-			return true;
+			throw new Exception('scheduledBackup->getSeed: '."Error: Failed to determine if there was a valid seed and return it. This should not happen.");
 
 		}
 
 
 
 		// Check to see if there is a running backup entry already for this scheduled backup
-		function pollIsRunning() {
+		function isRunning() {
 
 			global $config;
 
 			if(!is_numeric($this->id)) {
-				$this->error = 'scheduledBackup->pollIsRunning: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('scheduledBackup->isRunning: '."Error: The ID for this object is not an integer.");
 			}   
 				
 			$dbGetter = new dbConnectionGetter($config);
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'scheduledBackup->pollIsRunning: '.$dbGetter->error;
-				return false;
-			}	   
+			$conn = $dbGetter->getConnection($this->log);
 				
-
 			$sql = "SELECT running_backup_id FROM running_backups WHERE scheduled_backup_id=".$this->id;
 				
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'scheduledBackup->pollIsRunning: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('scheduledBackup->isRunning: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}	   
 
 			if( $res->num_rows == 0 ) {
-				$this->isRunning = false;
+				return false;
 			} elseif( $res->num_rows > 0 ) {
 
-				$this->isRunning = true;
 				$this->runningBackups = Array();
 				while($row = $res->fetch_array() ) {
 					$this->runningBackups[] = new runningBackup($row['running_backup_id']);
@@ -269,10 +209,9 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				$res->free();
 
+				return true;
 			}
 
-			$conn->close();
-			return true;
 			
 		}
 
@@ -283,37 +222,27 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
 			if(!is_numeric($this->id)) {
-				$this->error = 'scheduledBackup->getMostRecentCompletedBackupSnapshot: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('scheduledBackup->getMostRecentCompletedBackupSnapshot: '."Error: The ID for this object is not an integer.");
 			}
 
 			$dbGetter = new dbConnectionGetter($config);
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'scheduledBackup->getMostRecentCompletedBackupSnapshot: '.$dbGetter->error;
-				return false;
-			}
-
+			$conn = $dbGetter->getConnection($this->log);
 
 			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE status='COMPLETED' AND scheduled_backup_id=".$this->id." ORDER BY snapshot_time DESC LIMIT 1";
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'scheduledBackup->getMostRecentCompletedBackupSnapshot: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('scheduledBackup->getMostRecentCompletedBackupSnapshot: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			if( $res->num_rows != 1 ) {
-				$this->error = 'scheduledBackup->getMostRecentCompletedBackupSnapshot: '."Error: Could not find the most recent backup snapshot for Scheduled Backup ID ".$this->id;
-				return false;
+				throw new Exception('scheduledBackup->getMostRecentCompletedBackupSnapshot: '."Error: Could not find the most recent backup snapshot for Scheduled Backup ID ".$this->id);
 			}
 
 			$row = $res->fetch_array();
 
 			$snapshotGetter = new backupSnapshotGetter();
-			if( ! ( $snapshot = $snapshotGetter->getById($row['backup_snapshot_id']) ) ) {
-				$this->error = 'scheduledBackup->getMostRecentCompletedBackupSnapshot: '.$snapshotGetter->error;
-				return false;
-			}
+			$snapshot = $snapshotGetter->getById($row['backup_snapshot_id']);
 
 			return $snapshot;
 		}
@@ -325,30 +254,21 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
 			if(!is_numeric($this->id)) {
-				$this->error = 'scheduledBackup->applyRetentionPolicy: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('scheduledBackup->applyRetentionPolicy: '."Error: The ID for this object is not an integer.");
 			}
 
 			$dbGetter = new dbConnectionGetter($config);
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'scheduledBackup->applyRetentionPolicy: '.$dbGetter->error;
-				return false;
-			}
-
+			$conn = $dbGetter->getConnection($this->log);
 
 			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE status='COMPLETED' AND scheduled_backup_id=".$this->id." AND snapshot_time IS NOT NULL ORDER BY snapshot_time ASC";
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'scheduledBackup->applyRetentionPolicy: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('scheduledBackup->applyRetentionPolicy: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			// Get info for this scheduledBackup
-			if( ! ( $info = $this->getInfo() ) ) {
-				$this->error = 'scheduledBackup->applyRetentionPolicy: '.$this->error;
-				return false;
-			}
+			$info = $this->getInfo();
 
 			// Build service objects for later use
 			$snapshotGetter = new backupSnapshotGetter();
@@ -360,36 +280,26 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				// Grab the first row - it is the SEED
 				if( ! ( $row = $res->fetch_array() ) ) {
-					$this->error = 'scheduledBackup->applyRetentionPolicy: '."Error: Could not retrieve the object ID for the seed of Scheduled Backup ID ".$this->id;
+					throw new Exception('scheduledBackup->applyRetentionPolicy: '."Error: Could not retrieve the object ID for the seed of Scheduled Backup ID ".$this->id);
 				}
 
-				if( ! ( $seedSnapshot = $snapshotGetter->getById($row['backup_snapshot_id'] ) ) ) {
-					$this->error = 'scheduledBackup->applyRetentionPolicy: '.$snapshotGetter->error;
-					return false;
-				}
+				$seedSnapshot = $snapshotGetter->getById($row['backup_snapshot_id'] );
 
 				// Grab the second row - it is the DELTA to be collapsed.
 				if( ! ( $row = $res->fetch_array() ) ) {
-					$this->error = 'scheduledBackup->applyRetentionPolicy: '."Error: Could not retrieve the object ID for the seed of Scheduled Backup ID ".$this->id;
+					throw new Exception('scheduledBackup->applyRetentionPolicy: '."Error: Could not retrieve the object ID for the seed of Scheduled Backup ID ".$this->id);
 				}
 				
-				if( ! ( $deltaSnapshot = $snapshotGetter->getById($row['backup_snapshot_id'] ) ) ) {
-					$this->error = 'scheduledBackup->applyRetentionPolicy: '.$snapshotGetter->error;
-					return false;
-				}
+				$deltaSnapshot = $snapshotGetter->getById($row['backup_snapshot_id'] );
 
 				// Merge them together
-				if( ! $snapshotMerger->merge($seedSnapshot, $deltaSnapshot) ) {
-					$this->error = 'scheduledBackup->applyRetentionPolicy: '.$snapshotMerger->error;
-					return false;
-				}
+				$snapshotMerger->mergeSnapshots($seedSnapshot, $deltaSnapshot);
 
 				// Check to see what merge work is needed now.
 				$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE status='COMPLETED' AND scheduled_backup_id=".$this->id." AND snapshot_time IS NOT NULL ORDER BY snapshot_time ASC";
 
 				if( ! ($res = $conn->query($sql) ) ) {
-			   		$this->error = 'scheduledBackup->applyRetentionPolicy: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-					return false;
+			   		throw new Exception('scheduledBackup->applyRetentionPolicy: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 		   		}
 
 			}

@@ -25,6 +25,11 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 		function __construct($id) {
+
+			if(!is_numeric($id) ) {
+				throw new Exception('backupVolume->__construct: '."Error: The ID for this object is not an integer.");
+			}
+
 			$this->id = $id;
 			$this->log = false;
 		}
@@ -38,26 +43,19 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
 			if(!is_numeric($this->id)) {
-				$this->error = 'backupVolume->getInfo: '."Error: The ID for this object is not an integer.";
-				return false;
+				throw new Exception('backupVolume->getInfo: '."Error: The ID for this object is not an integer.");
 			}
 
 
 			$dbGetter = new dbConnectionGetter();
 
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				$this->error = 'backupVolume->getInfo: '.$dbGetter->error;
-				return false;
-			}
-
+			$conn = $dbGetter->getConnection($this->log);
 
 			$sql = "SELECT * FROM backup_volumes WHERE backup_volume_id=".$this->id;
 
-
 			if( ! ($res = $conn->query($sql) ) ) {
-				$this->error = 'backupVolume->getInfo: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error";
-				return false;
+				throw new Exception('backupVolume->getInfo: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 	
 			$info = $res->fetch_array();

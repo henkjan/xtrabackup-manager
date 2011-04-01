@@ -69,69 +69,60 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	if(!isSet($options['q']))	
 		print("\n");
 
-	// Setup logStream
-	$log = new logStream(XBM_MAIN_LOG, false, $config['LOGS']['level']);
+	try {
+
+		// Setup logStream
+		$log = new logStream(XBM_MAIN_LOG, false, $config['LOGS']['level']);
 
 
-	// Fetch the scheduled backup
-	$scheduledBackupGetter = new scheduledBackupGetter();
-	$scheduledBackupGetter->setLogStream($log);
+		// Fetch the scheduled backup
+		$scheduledBackupGetter = new scheduledBackupGetter();
+		$scheduledBackupGetter->setLogStream($log);
+		
+		$scheduledBackup = $scheduledBackupGetter->getById($options['s']);
 	
-	if( ! ( $scheduledBackup = $scheduledBackupGetter->getById($options['s']) ) ) {
-		print(basename(__FILE__).": ".$scheduledBackupGetter->error."\n");
-		die();
-	}
-
-
-	if( ! ( $scheduledBackupInfo = $scheduledBackup->getInfo() ) ) {
-		print(basename(__FILE__).": ".$scheduledBackup->error."\n");
-		die();
-	}
-
-	// If we are not in FORCE mode - check if the scheduled backup is active
-	if( ! isSet($options['f']) ) {
-
-		if( ! $scheduledBackup->pollActive() ) {
-			print(basename(__FILE__).": ".$scheduledBackup->error."\n");
-			die();
+	
+		$scheduledBackupInfo = $scheduledBackup->getInfo();
+	
+		// If we are not in FORCE mode - check if the scheduled backup is active
+		if( ! isSet($options['f']) ) {
+	
+			if( ! $scheduledBackup->isActive()) {
+				print(basename(__FILE__).": The specified backup is not active - Reason: ".$scheduledBackup->inactive_reason." -- exiting...\n");
+				die();
+			} 
+				
 		}
-
-		if( ! $scheduledBackup->active) {
-			print(basename(__FILE__).": The specified backup is not active - Reason: ".$scheduledBackup->inactive_reason." -- exiting...\n");
-			die();
-		} 
-			
-	}
-
-
-	// Proceed with the backup!
-
-	/* we're going to create a new backup snapshot,  -- start logging informational stuff to logs/hosts/hostname.log
-	create a new object.
-	figure out if the new snapshot will be incremental or full
-	setup the snapshot settings
-	tell the snapshot to take
-	final step of the snapshot will be to apply log
-	after apply log we should check to see if we exceeded the max number of retained snaps
-	then we should create a new snapshot that is a merge of the oldest incremental and full.
-	*/
-
-	$snapshotTaker = new backupSnapshotTaker();
-
-	$snapshotTaker->setLogStream($log);
-
-	// If we are in quiet mode, turn off the output to stdout
-	if(isSet($options['q']) ) {
-		$snapshotTaker->setInfoLogVerbose(false);
-	}
-
-	$snapshotTaker->setAlertEmailAddress($config['ALERTS']['email']);
-
-	if( ! $snapshotTaker->takeScheduledBackupSnapshot($scheduledBackup) ) {
-	//	print("xbm-backup.php: ".$snapshotTaker->error."\n");
-		die();
-	}
-
 	
+
+		// Proceed with the backup!
+
+		/* we're going to create a new backup snapshot,  -- start logging informational stuff to logs/hosts/hostname.log
+		create a new object.
+		figure out if the new snapshot will be incremental or full
+		setup the snapshot settings
+		tell the snapshot to take
+		final step of the snapshot will be to apply log
+		after apply log we should check to see if we exceeded the max number of retained snaps
+		then we should create a new snapshot that is a merge of the oldest incremental and full.
+		*/
+	
+		$snapshotTaker = new backupSnapshotTaker();
+	
+		$snapshotTaker->setLogStream($log);
+	
+		// If we are in quiet mode, turn off the output to stdout
+		if(isSet($options['q']) ) {
+			$snapshotTaker->setInfoLogVerbose(false);
+		}
+	
+		$snapshotTaker->setAlertEmailAddress($config['ALERTS']['email']);
+	
+		$snapshotTaker->takeScheduledBackupSnapshot($scheduledBackup);
+	
+	} catch ( Exception $e ) {
+		print(basename(__FILE__).": ".$e->getMessage()."\nTrace:\n".$e->getTraceAsString()."\n");
+		die();
+	}		
 	/* vi: set filetype=php */
 ?>
