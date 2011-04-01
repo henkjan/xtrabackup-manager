@@ -94,15 +94,15 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		// Return the scheduledBackup parent object for this snapshot.
 		function getScheduledBackup() {
 
-            if(!is_object($this->scheduledBackup) ) {
+			if(!is_object($this->scheduledBackup) ) {
 
-                $info = $this->getInfo();
-                
-                $scheduledBackupGetter = new scheduledBackupGetter();
+				$info = $this->getInfo();
+				
+				$scheduledBackupGetter = new scheduledBackupGetter();
 
-                $this->scheduledBackup = $scheduledBackupGetter->getById($info['scheduled_backup_id']);
+				$this->scheduledBackup = $scheduledBackupGetter->getById($info['scheduled_backup_id']);
 
-            }   
+			}   
 
 
 			return $this->scheduledBackup;
@@ -202,29 +202,29 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		// Set the snapshot time of the backup snapshot - uses NOW() if unset.
 		function setSnapshotTime($snapshotTime = false) {
 
-            if(!is_numeric($this->id)) {
-                throw new Exception('backupSnapshot->setSnapshotTime: '."Error: The ID for this object is not an integer.");
-            }
+			if(!is_numeric($this->id)) {
+				throw new Exception('backupSnapshot->setSnapshotTime: '."Error: The ID for this object is not an integer.");
+			}
 
 
-            $dbGetter = new dbConnectionGetter();
+			$dbGetter = new dbConnectionGetter();
 
 
-            $conn = $dbGetter->getConnection($this->log);
+			$conn = $dbGetter->getConnection($this->log);
 
 			if($snapshotTime === false) {
 				$snapshotTime = 'NOW()';
 			}
 
-            $sql = "UPDATE backup_snapshots SET snapshot_time='".$conn->real_escape_string($snapshotTime)."' ";
+			$sql = "UPDATE backup_snapshots SET snapshot_time='".$conn->real_escape_string($snapshotTime)."' ";
 
-            $sql .= " WHERE backup_snapshot_id=".$this->id;
+			$sql .= " WHERE backup_snapshot_id=".$this->id;
 
-            if( ! $conn->query($sql) ) {
-                throw new Exception('backupSnapshot->setSnapshotTime: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
-            }
+			if( ! $conn->query($sql) ) {
+				throw new Exception('backupSnapshot->setSnapshotTime: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
 
-            return true;
+			return true;
 
 		}
 
@@ -267,11 +267,11 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			if( preg_match('/to_lsn = ([0-9]+:[0-9]+|[0-9]+)/', $file, $matches) == 0 ) {
-                throw new Exception('backupSnapshot->getLsn: '."Error: Could find log sequence information in file: ".$path."/xtrabackup_checkpoints");
+				throw new Exception('backupSnapshot->getLsn: '."Error: Could find log sequence information in file: ".$path."/xtrabackup_checkpoints");
 			}
 
 			if( !isSet($matches[1]) || strlen($matches[1]) == 0 ) {
-                throw new Exception('backupSnapshot->getLsn: '."Error: Could find log sequence information in file: ".$path."/xtrabackup_checkpoints");
+				throw new Exception('backupSnapshot->getLsn: '."Error: Could find log sequence information in file: ".$path."/xtrabackup_checkpoints");
 			}
 
 			return $matches[1];
@@ -283,28 +283,62 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			global $config;
 
-            if(!is_numeric($this->id)) {
-                throw new Exception('backupSnapshot->assignChildrenNewParent: '."Error: The ID for this object is not an integer.");
-            }
+			if(!is_numeric($this->id)) {
+				throw new Exception('backupSnapshot->assignChildrenNewParent: '."Error: The ID for this object is not an integer.");
+			}
 
 			if(!is_numeric($parentId) ) {
 				throw new Exception('backupSnapshot->assignChildrenNewParent: '."Error: Expected numeric value for new parent to assign to children of this snapshot, but did not get one.");
 			}
 
-            $dbGetter = new dbConnectionGetter();
+			$dbGetter = new dbConnectionGetter();
 
-            $conn = $dbGetter->getConnection($this->log);
+			$conn = $dbGetter->getConnection($this->log);
 
-            $sql = "UPDATE backup_snapshots SET parent_snapshot_id=".$parentId." WHERE parent_snapshot_id=".$this->id;
+			$sql = "UPDATE backup_snapshots SET parent_snapshot_id=".$parentId." WHERE parent_snapshot_id=".$this->id;
 
 
-            if( ! $conn->query($sql) ) {
-                throw new Exception('backupSnapshot->assignChildrenNewParent: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
-            }
+			if( ! $conn->query($sql) ) {
+				throw new Exception('backupSnapshot->assignChildrenNewParent: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
 
-            return true;
+			return true;
 
 			
+		}
+
+
+		// Get the child backupSnapshot of this one
+		function getChild() {
+
+			global $config;
+
+			if(!is_numeric($this->id)) {
+				throw new Exception('backupSnapshot->getChild: '."Error: The ID for this object is not an integer.");
+			}
+
+
+			$dbGetter = new dbConnectionGetter();
+
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE parent_snapshot_id=".$this->id;
+
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new Exception('backupSnapshot->getChild: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			if($res->num_rows != 1 ) {
+				throw new Exception('backupSnapshot->getChild: '."Error: Could not identify a single child of this backupSnapshot.");
+			}
+
+			$row = $res->fetch_array();
+
+			$backupGetter = new backupSnapshotGetter();
+
+			return $backupGetter->getById($row['backup_snapshot_id']);
+
 		}
 
 	}

@@ -767,7 +767,11 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 		// Merge the deltas from deltaPath into seedPath using xbBinary xtrabackup binary
-		function mergePaths($seedPath, $deltaPath, $xbBinary) {
+		function mergePaths($seedPath, $deltaPath, $xbBinary='') {
+
+			if(strlen($xbBinary) == 0 ) {
+				throw new Exception('backupSnapshotMerger->mergePaths: '."Error: Expected an xtrabackup binary passed as a parameter, but string was empty.");
+			}
 
 			// Actually kick off the process to do it here...
 			$mergeCommand = $xbBinary.' --prepare --apply-log-only --target-dir='.$seedPath.' --incremental-dir='.$deltaPath.' 1>&2';

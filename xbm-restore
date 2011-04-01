@@ -1,0 +1,104 @@
+#!/usr/bin/php
+<?php
+/*
+
+Copyright 2011 Marin Software
+
+This file is part of Xtrabackup Manager.
+
+Xtrabackup Manager is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 2 of the License, or
+(at your option) any later version.
+
+Xtrabackup Manager is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
+	/* xbm-restore - Script to restore backup snapshots. */
+
+	
+	require('includes/init.php');
+
+	// Defined options, used for helptext only.
+	$optDef = Array(
+					'h' => 'Help - Display this help text.',
+					's' => 'The Backup Snapshot ID to restore.',
+					'l' => 'Perform a local restore to the specified pathname.'//,
+					//'r' => 'Perform a remote restore to location specified with user@host:/path/name (currently unsupported)'
+				);
+
+	ksort($optDef);
+
+	// Define options and get them from cmdline
+	$shortOpts = 'hs:l:r:';
+	$options = getOpt($shortOpts);
+
+	print("\n".basename(__FILE__)." -- ".XBM_RELEASE_VERSION."\n");
+
+	if(isSet($options['s']) && !is_numeric($options['s']) ) {
+		print("\nThe -s option must be numeric.\n");
+		// Show help text
+		$options['h'] = true;
+	}
+	if(!isSet($options['s']) ) {
+		print("\nThe -s option is required.\n");
+		// Show help text
+		$options['h'] = true;
+	}
+
+	// Either l or r is required.
+	if(!isSet($options['l']) && !isSet($options['r']) ) {
+		print("\nYou must specify either -l (local) or -r (remote) parameters.\n");
+		// show help text
+		$options['h'] = true;
+	}
+
+	// Catch the -h option first - print help text
+	if( isSet($options['h']) || sizeOf($options) == 0 ) {
+		$msg = "\nParameters: \n";
+		foreach($optDef as $opt => $desc) {
+			$msg .= "  -".$opt."	".$desc."\n";
+		}
+		print($msg."\n\n");	
+		die();
+
+	}
+
+	print("\n");
+
+	// Setup logStream
+	$log = new logStream(XBM_MAIN_LOG, false, $config['LOGS']['level']);
+	$infolog = new logStream(false, true, XBM_LOG_INFO);
+
+
+	try {
+		// Fetch the backup
+		$backupSnapshotGetter = new backupSnapshotGetter();
+		$backupSnapshotGetter->setLogStream($log);
+		
+		$backupSnapshot = $backupSnapshotGetter->getById($options['s']);
+	
+		if(isSet($options['l'])) {
+	
+			// Create a local backup snapshot restorer
+			$backupRestorer = new backupRestorer();
+			$backupRestorer->setLogStream($log);
+			$backupRestorer->setInfoLogStream($infolog);
+	
+			$backupRestorer->restoreLocal($backupSnapshot, $options['l']);
+	
+		}
+	
+	} catch (Exception $e) {
+		die('An error occurred while restoring: '.$e->getMessage()."\n");
+	}
+
+	/* vi: set filetype=php */
+?>

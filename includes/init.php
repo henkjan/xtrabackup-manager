@@ -42,6 +42,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	require('backupVolume.class.php');
 	require('scheduledBackup.class.php');
 	require('logStream.class.php');
+	require('backupRestorer.class.php');
 	require('backupSnapshot.class.php');
 	require('backupSnapshotTaker.class.php');
 	require('runningBackup.class.php');
