@@ -1,0 +1,2 @@
+scheduled_backup_id	name	cron_expression	snapshots_retained	backup_user	datadir_path	mysql_user	mysql_password	lock_tables	host_id	active	backup_volume_id	mysql_type_id
+1	My Daily Backup Example	0 19 * * *	7	mysql	/mysqldb/data	backup	backupUserPassword	Y	2	Y	2	4
