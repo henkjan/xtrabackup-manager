@@ -308,7 +308,20 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			// unfortunately the -u option can only be used for privileged users, otherwise we get an error
 			// This is even the case if you try to use the -u option to specify the current user!!
 			if( exec('whoami') != $config['SYSTEM']['user'] ) {
-				exec("crontab -u ".$config['SYSTEM']['user']." $tmpName", $output, $returnVar);
+
+				// Detect what to do for differnt OSes 
+				switch( PHP_OS ) {
+					default:
+					case 'Linux':
+						exec("crontab -u ".$config['SYSTEM']['user']." $tmpName", $output, $returnVar);
+						break;
+
+					case 'SunOS':
+						throw new Exception('cronFlusher->flushSchedule: '."Error: SunOS based systems only support altering current user's crontab. Change user to ".$config['SYSTEM']['user']." first.");
+						break;
+
+				}
+
 			} else {
 				exec("crontab $tmpName", $output, $returnVar);
 			}
