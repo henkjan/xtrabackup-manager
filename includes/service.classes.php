@@ -834,9 +834,9 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	class netcatCommandBuilder {
 
 		// Get a netcat (nc) command to use to create a netcat listener on port $port
-		function getServerCommand($port) {
+		function getServerCommand($port, $systemType = PHP_OS) {
 	
-			switch( PHP_OS ) {
+			switch( $systemType ) {
 				default:
 				case 'Linux':
 					return "nc -l $port";
@@ -850,9 +850,9 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 		// get a netcat (nc) command to use to create a netcat sender/client - connecting to $host on port $port
-		function getClientCommand($host, $port) {
+		function getClientCommand($host, $port, $systemType = PHP_OS) {
 
-			switch( PHP_OS ) {
+			switch( $systemType ) {
 				default:
 				case 'Linux':
 					return "nc $host $port";

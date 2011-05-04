@@ -66,6 +66,7 @@ CREATE TABLE `hosts` (
   `last_backup` datetime default NULL,
   `active` enum('Y','N') default 'Y',
   `staging_path` varchar(1024) NOT NULL default '/tmp',
+  `system_type` varchar(64) default 'Linux',
   PRIMARY KEY  (`host_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
