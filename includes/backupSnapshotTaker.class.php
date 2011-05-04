@@ -252,7 +252,10 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						// Fire up a netcat listener
 		
 						// Set the command we plan to run
-						$ncCommand = ' cd '.$path.' ; nc -l '.$rbInfo['port'].' | tar xvif - 2>&1 > /dev/null';
+						$ncBuilder = new netcatCommandBuilder();
+						$ncServer = $ncBuilder->getServerCommand($rbInfo['port']);
+
+						$ncCommand = ' cd '.$path.' ; '.$ncServer.' | tar xvif - 2>&1 > /dev/null';
 		
 						// Open the process with a stream to read from it
 						$ncProc = popen($ncCommand,'r');
@@ -280,9 +283,9 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						// Info output
 						$this->infolog->write("Started Netcat (nc) listener on port ".$rbInfo['port']." to receive backup tar stream into directory $path ...", XBM_LOG_INFO);
 		
-	
+						$ncClient = $ncBuilder->getClientCommand($config['SYSTEM']['xbm_hostname'], $rbInfo['port']);
 						// Copy the backup back via the netcat listener
-						$copyCommand = "ssh ".$sbInfo['backup_user']."@".$hostInfo['hostname']." 'cd $tempDir; tar cvf - . | nc ".$config['SYSTEM']['xbm_hostname']." ".$rbInfo['port']." '";
+						$copyCommand = "ssh ".$sbInfo['backup_user']."@".$hostInfo['hostname']." 'cd $tempDir; tar cvf - . | ".$ncClient." '";
 	
 						// Set the state of the snapshot to COPYING
 						$snapshot->setStatus('COPYING');
@@ -385,9 +388,11 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		
 		
 						// Fire up a netcat listener
-		
+	
+						$ncBuilder = new netcatCommandBuilder();
+						$ncServer = $ncBuilder->getServerCommand($rbInfo['port']);	
 						// Set the command we plan to run
-						$ncCommand = ' cd '.$path.' ; nc -l '.$rbInfo['port'].' | tar xvif - 2>&1 > /dev/null';
+						$ncCommand = ' cd '.$path.' ; '.$ncServer.' | tar xvif - 2>&1 > /dev/null';
 		
 						// Open the process with a stream to read from it
 						$ncProc = popen($ncCommand,'r');
@@ -428,8 +433,9 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						if($sbInfo['lock_tables'] == 'N') {
 							$xbCommand .= " --no-lock ";
 						}
-		
-						$xbCommand .= " | nc ".$config['SYSTEM']['xbm_hostname']." ".$rbInfo['port'].
+	
+						$ncClient = $ncBuilder->getClientCommand($config['SYSTEM']['xbm_hostname'], $rbInfo['port']);
+						$xbCommand .= " | ".$ncClient.
 									' ; exit ${PIPESTATUS[0]}\''; // Makes sure the command run on the remote machine returns the exit status of innobackupex, which is what SSH will return
 		
 						// Set up how we'll interact with the IO file handlers of the process

@@ -829,4 +829,41 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	} // Class: backupSnapshotMerger
 
 
+	// Simple class used to build commands to use for netcat purposes
+	// necessary due to parameter variations on different OSes
+	class netcatCommandBuilder {
+
+		// Get a netcat (nc) command to use to create a netcat listener on port $port
+		function getServerCommand($port) {
+	
+			switch( PHP_OS ) {
+				default:
+				case 'Linux':
+					return "nc -l $port";
+					break;
+
+				case 'SunOS':
+					return "nc -l -p $port";
+					break;
+			}
+
+		}
+
+		// get a netcat (nc) command to use to create a netcat sender/client - connecting to $host on port $port
+		function getClientCommand($host, $port) {
+
+			switch( PHP_OS ) {
+				default:
+				case 'Linux':
+					return "nc $host $port";
+					break;
+
+				case 'SunOS':
+					return "nc -q 0 $host $port";
+					break;
+			}
+		}
+
+	} // Class: netcatCommandBuilder
+
 ?>
