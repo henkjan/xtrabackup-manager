@@ -211,7 +211,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					
 						// Check that we launched OK.
 						if( !is_resource($xbProc) ) {
-							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to use ssh to start xtrabackup with: $xbCommand .", $runningBackup, $snapshot);
+							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to use ssh to start xtrabackup with: $xbCommand .");
 						}   
 						
 						// Check the status of the backup every 5 seconds...
@@ -222,7 +222,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 							$streamContents .= stream_get_contents($xbPipes[2]);
 	
 							if( ! ( $xbStatus = proc_get_status($xbProc) ) ) {
-								throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to retrieve status on backup process.", $runningBackup, $snapshot);
+								throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to retrieve status on backup process.");
 							}
 							sleep(5);
 	
@@ -231,7 +231,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 						if($xbStatus['exitcode'] <> 0 ) {
 							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: There was an error backing up - The process returned code ".$xbStatus['exitcode'].".".
-													" The output from the backup is as follows:\n".$streamContents, $runningBackup, $snapshot);
+													" The output from the backup is as follows:\n".$streamContents);
 						}
 	
 		
@@ -257,7 +257,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						// Open the process with a stream to read from it
 						$ncProc = popen($ncCommand,'r');
 						if(!is_resource($ncProc) ) {
-							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to start netcat with command: $ncCommand .", $runningBackup, $snapshot);
+							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to start netcat with command: $ncCommand .");
 						}
 		
 						// Set the stream so we can read from it without blocking (return if there is no data!)
@@ -274,7 +274,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 							while(!feof($ncProc) ) {
 								$ncOutput .= "\n".fgets($ncProc);
 							}
-							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to start netcat with command: $ncCommand . Got error output: $ncOutput .", $runningBackup, $snapshot);
+							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to start netcat with command: $ncCommand . Got error output: $ncOutput .");
 						}
 		
 						// Info output
@@ -302,7 +302,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		
 						// Check that we launched OK.
 						if( !is_resource($copyProc) ) {
-							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to use ssh to start copy with: $copyCommand .", $runningBackup, $snapshot);
+							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to use ssh to start copy with: $copyCommand .");
 						}
 		
 						// Check the status of the backup every 5 seconds...
@@ -311,7 +311,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						do {
 							$streamContents .= stream_get_contents($copyPipes[2]);
 							if( ! ( $copyStatus = proc_get_status($copyProc) ) ) {
-								throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to retrieve status on copy process.", $runningBackup, $snapshot);
+								throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to retrieve status on copy process.");
 							}
 							sleep(5);
 		
@@ -320,7 +320,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		
 						if($copyStatus['exitcode'] <> 0 ) {
 							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: There was an error copying files - The process returned code ".$copyStatus['exitcode'].".".
-													" The output from the backup is as follows:\n".$streamContents, $runningBackup, $snapshot);
+													" The output from the backup is as follows:\n".$streamContents);
 						}
 		
 						/* For debugging...
@@ -392,7 +392,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						// Open the process with a stream to read from it
 						$ncProc = popen($ncCommand,'r');
 						if(!is_resource($ncProc) ) {
-							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to start netcat with command: $ncCommand .", $runningBackup, $snapshot);
+							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to start netcat with command: $ncCommand .");
 						}
 		
 						// Set the stream so we can read from it without blocking (return if there is no data!)
@@ -409,7 +409,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 							while(!feof($ncProc) ) {
 								$ncOutput .= "\n".fgets($ncProc);
 							}
-							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to start netcat with command: $ncCommand . Got error output: $ncOutput .", $runningBackup, $snapshot);
+							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to start netcat with command: $ncCommand . Got error output: $ncOutput .");
 						}
 		
 						// Info output
@@ -459,7 +459,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		
 						// Check that we launched OK.
 						if( !is_resource($xbProc) ) {
-							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to use ssh to start innobackupex with: $xbCommand .", $runningBackup, $snapshot);
+							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to use ssh to start innobackupex with: $xbCommand .");
 						}
 		
 						// Check the status of the backup every 5 seconds...
@@ -467,9 +467,9 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						stream_set_blocking($xbPipes[2], 0);
 						do {
 							$streamContents .= stream_get_contents($xbPipes[2]);
-		
+
 							if( ! ( $xbStatus = proc_get_status($xbProc) ) ) {
-								throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to retrieve status on backup process.", $runningBackup, $snapshot);
+								throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to retrieve status on backup process.");
 							}
 							sleep(5);
 		
@@ -478,7 +478,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		
 						if($xbStatus['exitcode'] <> 0 ) {
 							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: There was an error backing up - The process returned code ".$xbStatus['exitcode'].".".
-													" The output from the backup is as follows:\n".$streamContents, $runningBackup, $snapshot);
+													" The output from the backup is as follows:\n".$streamContents);
 						} 
 		
 		
@@ -526,7 +526,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		
 						// Check that we launched OK.
 						if( !is_resource($applyProc) ) {
-							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to run apply log command: $applyCommand", $runningBackup, $snapshot);
+							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to run apply log command: $applyCommand");
 						}
 		
 						// Check the status of the apply log every 5 seconds...
@@ -535,7 +535,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						do {
 							$streamContents .= stream_get_contents($applyPipes[2]);
 							if( ! ( $applyStatus = proc_get_status($applyProc) ) ) {
-								throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to retrieve status on apply log process.", $runningBackup, $snapshot);
+								throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Unable to retrieve status on apply log process.");
 							}
 							sleep(5);
 		
@@ -544,7 +544,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		
 						if($applyStatus['exitcode'] <> 0 ) {
 							throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: There was an error applying logs - The process returned code ".$applyStatus['exitcode'].".".
-													" The output from the apply log process is as follows:\n".$streamContents, $runningBackup, $snapshot);
+													" The output from the apply log process is as follows:\n".$streamContents);
 						}
 		
 		
@@ -570,6 +570,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						$this->infolog->write("Backup completed successfully!", XBM_LOG_INFO);
 
 					} catch (Exception $e) {
+						$this->infolog->write($e->getMessage(), XBM_LOG_ERROR);
 						// Remove files and make status failed
 						$snapshot->deleteFiles();
 						$snapshot->setStatus('FAILED');
