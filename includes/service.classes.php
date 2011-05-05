@@ -311,13 +311,20 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				// Detect what to do for differnt OSes 
 				switch( PHP_OS ) {
-					default:
 					case 'Linux':
 						exec("crontab -u ".$config['SYSTEM']['user']." $tmpName", $output, $returnVar);
 						break;
 
+					default:
 					case 'SunOS':
-						throw new Exception('cronFlusher->flushSchedule: '."Error: SunOS based systems only support altering current user's crontab. Change user to ".$config['SYSTEM']['user']." first.");
+						if( stristr(php_uname('v'), 'nexenta') ) {
+							$osDetect = 'Nexenta';
+						} else {
+							$osDetect = 'SunOS';
+						}
+
+						throw new Exception('cronFlusher->flushSchedule: '."Error: $osDetect based systems only support altering current user's crontab. Change user to ".$config['SYSTEM']['user']." first.");
+
 						break;
 
 				}
@@ -830,10 +837,11 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 	// Simple class used to build commands to use for netcat purposes
-	// necessary due to parameter variations on different OSes
+	// necessary due to parameter variations on different platforms
 	class netcatCommandBuilder {
 
 		// Get a netcat (nc) command to use to create a netcat listener on port $port
+		// Specify a systemType if you like, otherwise detect the current system.
 		function getServerCommand($port, $systemType = PHP_OS) {
 	
 			switch( $systemType ) {
@@ -842,6 +850,8 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					return "nc -l $port";
 					break;
 
+				// Lets assume that ALL SunOS netcat needs nc -l -p PORT syntax
+				// So far only tested on Nexenta
 				case 'SunOS':
 					return "nc -l -p $port";
 					break;
@@ -850,18 +860,18 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 		// get a netcat (nc) command to use to create a netcat sender/client - connecting to $host on port $port
+		// specify a systemType if you like, otherwise detect the type of current system
 		function getClientCommand($host, $port, $systemType = PHP_OS) {
 
 			switch( $systemType ) {
+				// Currently we can use some BASH magic to make this work on both Nexenta and Linux
+				// By default attempt to auto-detect if we have a netcat version that has the -q option mentioned in help output
+				// in this case it means netcat does not listen to EOF on stdin without it, so we must add it like -q0
 				default:
-				case 'Linux':
-					return "nc $host $port";
-					break;
-
-				case 'SunOS':
-					return "nc -q 0 $host $port";
+					return '`if [ \`nc -h 2>&1|grep -c "\-q"\` -gt 0 ]; then NC="nc -q0"; else NC="nc"; fi; echo "$NC '.$host.' '.$port.'"`';
 					break;
 			}
+
 		}
 
 	} // Class: netcatCommandBuilder
