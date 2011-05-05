@@ -48,7 +48,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		$cronFlusher->flushSchedule();
 
 	} catch ( Exception $e ) {
-		print("There was an error flushing to crontab: ".$e->getMessage()."\n");
+		print("There was an error flushing to crontab: ".$e->getMessage()."\n\n");
 		die();
 	}
 
