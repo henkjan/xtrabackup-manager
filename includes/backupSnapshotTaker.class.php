@@ -46,11 +46,6 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$this->infologVerbose = $bool;
 		}
 
-		// Set email alert target
-		function setAlertEmailAddress($email) {
-			$this->alertEmail = $email;
-		}
-
 		// The main functin of this class - take the snapshot for a scheduled backup
 		// Takes a scheduledBackup object as a param
 		function takeScheduledBackupSnapshot ( $scheduledBackup = false ) {

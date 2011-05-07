@@ -30,7 +30,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	$config['SYSTEM']['tmpdir'] = '/tmp';
 	
 	// Where the logs should be stored
-	$config['LOGS']['logdir'] = '/home/xbm/xbm/logs';
+	$config['LOGS']['logdir'] = '/export/home/xbm/xbm-dev/logs';
 
 	// What log level should we use - DEBUG or NORMAL
 	$config['LOGS']['level'] = 'DEBUG';
@@ -47,7 +47,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	$config['SYSTEM']['max_host_concurrent_backups'] = 1;
 
 	// The hostname of the host xbm runs on - needs to resolve on the hosts to be backed up
-	$config['SYSTEM']['xbm_hostname'] = 'bup06-int';
+	$config['SYSTEM']['xbm_hostname'] = 'xbp01-int';
 
 	/* Credentials for connecting to the XBM MySQL DB */
 	$config['DB']['user'] = 'xbm';
@@ -56,12 +56,13 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	$config['DB']['port'] = 3306;
 	$config['DB']['schema'] = 'xbm';
 	// Socket to use -- Comment out if you don't want to use a socket file to connect (TCP)
-	$config['DB']['socket'] = '/mysqldb/tmp/mysql.sock';
+	//$config['DB']['socket'] = '/mysqldb/tmp/mysql.sock';
 
 	/* INACTIVE FEATURE OPTIONS */
 
 	// Where to send emails when ALERTs occur - not enabled yet
-	$config['ALERTS']['email'] = 'lmulcahy@marinsoftware.com';
+	$config['ALERTS']['email'] = 'lmulcahy@marinsoftware.com, mdicarlo@marinsoftware.com';
 	$config['ALERTS']['enabled'] = true;
+	$config['ALERTS']['replyto'] = 'alerts@marinsoftware.com';
 
 ?>

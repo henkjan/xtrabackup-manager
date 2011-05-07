@@ -116,11 +116,46 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$snapshotTaker->setInfoLogVerbose(false);
 		}
 	
-		$snapshotTaker->setAlertEmailAddress($config['ALERTS']['email']);
-	
 		$snapshotTaker->takeScheduledBackupSnapshot($scheduledBackup);
 	
 	} catch ( Exception $e ) {
+
+		if($config['ALERTS']['enabled'] == true) {
+
+			try {
+
+				$host = $scheduledBackup->getHost();
+				$hostInfo = $host->getInfo();
+				$sbInfo = $scheduledBackup->getInfo();
+
+				$subj =  "XtraBackup Manager - ALERT - Backup Failure for ".$hostInfo['hostname']." in ".basename(__FILE__);
+						
+				$msg =  "A fatal error occurred while attempting to run the following backup\n\n";
+				$msg .= "Host: ".$hostInfo['hostname']." - ".$hostInfo['description']."\n";
+				$msg .= "Scheduled Backup: ".$sbInfo['name']."\n";
+				$msg .= "Exception details:\n".$e->getMessage();
+				$msg .= "Trace:\n".$e->getTraceAsString()."\n\n";
+
+			} catch ( Exception $secondaryException ) {
+
+				$subj =  "XtraBackup Manager - ALERT - Backup Failure in ".basename(__FILE__);
+
+				$msg =  "A fatal error occurred while attempting to run a backup:\n\n";
+				$msg .= "Exception details:\n".$e->getMessage();
+				$msg .= "Trace:\n".$e->getTraceAsString()."\n\n";
+				$msg .= "Additionally a further error occurred while attempting to collect information on the original exception:\n\n";
+				$msg .= "Exception details:\n".$secondaryException->getMessage();
+				$msg .= "Trace:\n".$secondaryException->getTraceAsString()."\n\n";
+
+			}
+
+			$msg .= "-- \nThis was an automated message from XtraBackup Manager ".XBM_RELEASE_VERSION."\n\n";
+
+			if( ! mail($config['ALERTS']['email'], $subj, $msg, 'From: XtraBackup Manager <'.$config['ALERTS']['replyto'].'>') ) {
+					$log->write(basename(__FILE__).": Error: Failed to send alert email!", XBM_LOG_ERROR);
+			}
+		}
+
 		print(basename(__FILE__).": ".$e->getMessage()."\nTrace:\n".$e->getTraceAsString()."\n");
 		die();
 	}		
