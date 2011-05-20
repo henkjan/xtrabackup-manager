@@ -20,8 +20,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 	
-	/* Setup global defines that do not depend on anything else */
-
+	// Setup global defines that do not depend on anything else
 	define('XBM_RELEASE_VERSION', 'Xtrabackup Manager v0.1 - Copyright 2011 Marin Software');
 
 	// Log levels, lower is more verbose
@@ -34,7 +33,18 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	// Usually to see if we can run the backup 
 	define('XBM_SLEEP_SECS', 30);
 
-	/* Include config and class / function files */
+	// Autodetect some things to use in config.php
+
+	// Use gethostname() function if it exists, otherwise fallback to "hostname" shell cmd.
+	if( function_exists('gethostname') ) {
+		$XBM_AUTO_HOSTNAME = gethostname();
+	} else {
+		$XBM_AUTO_HOSTNAME = trim(`hostname`);
+	}
+
+	$XBM_AUTO_INSTALLDIR = dirname(dirname(__FILE__)) . '/';
+
+	// Include config and class / function files
 	require('config.php');
 	require('db.classes.php');
 	require('service.classes.php');
@@ -50,6 +60,6 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	require('configCSV.class.php');
 
 
-	/* Setup global defines that depend on other stuff */
+	// Setup global defines that depend on other stuff
 	define('XBM_MAIN_LOG', $config['LOGS']['logdir'].'/xbm.log');
 ?>

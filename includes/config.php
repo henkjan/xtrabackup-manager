@@ -30,7 +30,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	$config['SYSTEM']['tmpdir'] = '/tmp';
 	
 	// Where the logs should be stored
-	$config['LOGS']['logdir'] = '/export/home/xbm/xbm-dev/logs';
+	$config['LOGS']['logdir'] = $XBM_AUTO_INSTALLDIR . '/logs';
 
 	// What log level should we use - DEBUG or NORMAL
 	$config['LOGS']['level'] = 'DEBUG';
@@ -47,7 +47,10 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	$config['SYSTEM']['max_host_concurrent_backups'] = 1;
 
 	// The hostname of the host xbm runs on - needs to resolve on the hosts to be backed up
-	$config['SYSTEM']['xbm_hostname'] = 'xbp01-int';
+	// Auto-detected system setting by gethostname():
+	$config['SYSTEM']['xbm_hostname'] = $XBM_AUTO_HOSTNAME;
+	// or, you can uncomment this and set your own hostname explicitly:
+	// $config['SYSTEM']['xbm_hostname'] = '';
 
 	/* Credentials for connecting to the XBM MySQL DB */
 	$config['DB']['user'] = 'xbm';
