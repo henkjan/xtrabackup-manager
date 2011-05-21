@@ -10,13 +10,12 @@ INSERT INTO hosts (hostname, description, active, staging_path) VALUES ('mybacku
 SET @hv=LAST_INSERT_ID();
 
 /* Create a scheduled_backup for the host */
-INSERT INTO scheduled_backups (name, cron_expression, snapshots_retained, backup_user, 
+INSERT INTO scheduled_backups (name, cron_expression, backup_user, 
 	datadir_path, mysql_user, mysql_password, lock_tables, host_id, active, backup_volume_id, 
-	mysql_type_id
+	mysql_type_id, backup_strategy_id
 ) VALUES (
 	'My Daily Backup Example', /* Name of the backup */
 	'0 19 * * *', /* The cron expression that defines when you want this backup to fire - minute, hour, day, month, day-of-week */
-	7, /* How many snapshots to retain - 7 for a week of daily backups */
 	'mysql', /* The user to connect to the remote host with via SSH. 
 				You need to setup SSH trust so that no pass is needed. 
 				Needs access to the datadir, sp using mysql user is logical. */
@@ -27,7 +26,13 @@ INSERT INTO scheduled_backups (name, cron_expression, snapshots_retained, backup
 	@hv, /* The host_id of the entry in the hosts table that corresponds to the host this backup should run on */
 	'Y', /* Is this scheduled backup active? Y or N */
 	@bv, /* The backup volume storage to use to store the snapshots for this scheduled backup */
-	4   /* The mysql_type_id from the mysql_types table for the type of MySQL server that is running - 4 is MySQL 5.0 w/ built-in InnoDB
+	4,   /* The mysql_type_id from the mysql_types table for the type of MySQL server that is running - 4 is MySQL 5.0 w/ built-in InnoDB
 			This helps choose the correct xtrabackup binary to use for backup purposes */
+	2	/* The backup_strategy_id from the backup_strategies table - defines how full, incremental, etc. backups should be taken
+			and maintained. */
 );
 
+SET @sv=LAST_INSERT_ID();
+/* Set the parameter with ID 2, which is max_snapshots, to a value of 7 - Keep 7 days of snapshots given the cron_expression is daily */
+INSERT INTO scheduled_backup_params (scheduled_backup_id, backup_strategy_param_id, param_value) 
+VALUES (@sv, 2, 7);

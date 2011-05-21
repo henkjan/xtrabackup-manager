@@ -55,7 +55,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$conn = $dbGetter->getConnection($this->log);
 
 
-			$sql = "SELECT * FROM scheduled_backups WHERE scheduled_backup_id=".$this->id;
+			$sql = "SELECT sb.*, bs.strategy_code FROM scheduled_backups sb JOIN backup_strategies bs ON sb.backup_strategy_id=bs.backup_strategy_id WHERE scheduled_backup_id=".$this->id;
 
 
 			if( ! ($res = $conn->query($sql) ) ) {
@@ -248,63 +248,41 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 
-		// Check for COMPLETED backup snapshots under this scheduledBackup and perform any necessary merging/deletion
-		function applyRetentionPolicy() {
+
+		// Get an array list of the scheduledBackup parameters
+		function getParameters() {
 
 			global $config;
 
 			if(!is_numeric($this->id)) {
-				throw new Exception('scheduledBackup->applyRetentionPolicy: '."Error: The ID for this object is not an integer.");
+				throw new Exception('scheduledBackup->getParameters: '."Error: The ID for this object is not an integer.");
 			}
 
 			$dbGetter = new dbConnectionGetter($config);
 
 			$conn = $dbGetter->getConnection($this->log);
 
-			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE status='COMPLETED' AND scheduled_backup_id=".$this->id." AND snapshot_time IS NOT NULL ORDER BY snapshot_time ASC";
+			$sql = "SELECT bsp.param_name, sbp.param_value FROM 
+						scheduled_backups sb JOIN backup_strategy_params bsp 
+							ON sb.backup_strategy_id = bsp.backup_strategy_id 
+						JOIN scheduled_backup_params sbp
+							ON sbp.scheduled_backup_id = sb.scheduled_backup_id AND 
+								bsp.backup_strategy_param_id = sbp.backup_strategy_param_id
+					WHERE
+						sb.scheduled_backup_id=".$this->id;
+
 
 			if( ! ($res = $conn->query($sql) ) ) {
-				throw new Exception('scheduledBackup->applyRetentionPolicy: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+				throw new Exception('scheduledBackup->getParameters: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
-			// Get info for this scheduledBackup
-			$info = $this->getInfo();
-
-			// Build service objects for later use
-			$snapshotGetter = new backupSnapshotGetter();
-			$snapshotMerger = new backupSnapshotMerger();
-
-			// Check to see if the number of rows we have is more than the number of snapshots we should have at a max
-			while( $res->num_rows > $info['snapshots_retained'] ) { 
-
-
-				// Grab the first row - it is the SEED
-				if( ! ( $row = $res->fetch_array() ) ) {
-					throw new Exception('scheduledBackup->applyRetentionPolicy: '."Error: Could not retrieve the object ID for the seed of Scheduled Backup ID ".$this->id);
-				}
-
-				$seedSnapshot = $snapshotGetter->getById($row['backup_snapshot_id'] );
-
-				// Grab the second row - it is the DELTA to be collapsed.
-				if( ! ( $row = $res->fetch_array() ) ) {
-					throw new Exception('scheduledBackup->applyRetentionPolicy: '."Error: Could not retrieve the object ID for the seed of Scheduled Backup ID ".$this->id);
-				}
-				
-				$deltaSnapshot = $snapshotGetter->getById($row['backup_snapshot_id'] );
-
-				// Merge them together
-				$snapshotMerger->mergeSnapshots($seedSnapshot, $deltaSnapshot);
-
-				// Check to see what merge work is needed now.
-				$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE status='COMPLETED' AND scheduled_backup_id=".$this->id." AND snapshot_time IS NOT NULL ORDER BY snapshot_time ASC";
-
-				if( ! ($res = $conn->query($sql) ) ) {
-			   		throw new Exception('scheduledBackup->applyRetentionPolicy: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
-		   		}
-
+			$params = Array();
+			while( $row = $res->fetch_array() ) {
+				$params[$row['param_name']] = $row['param_value'];
 			}
 
-			return true;
+
+			return $params;
 
 		}
 

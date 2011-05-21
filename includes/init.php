@@ -58,6 +58,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	require('runningBackup.class.php');
 	require('mysqlType.class.php');
 	require('configCSV.class.php');
+	require('continuousIncrementalBackupTaker.class.php');
 
 
 	// Setup global defines that depend on other stuff

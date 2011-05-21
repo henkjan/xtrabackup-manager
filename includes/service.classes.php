@@ -312,7 +312,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				// Detect what to do for differnt OSes 
 				switch( PHP_OS ) {
 					case 'Linux':
-						exec("crontab -u ".$config['SYSTEM']['user']." $tmpName", $output, $returnVar);
+						exec("crontab -u ".$config['SYSTEM']['user']." $tmpName 2>&1", $output, $returnVar);
 						break;
 
 					default:
@@ -330,14 +330,15 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				}
 
 			} else {
-				exec("crontab $tmpName", $output, $returnVar);
+				exec("crontab $tmpName 2>&1", $output, $returnVar);
 			}
+
+			unlink($tmpName);
 
 			if($returnVar != 0 ) {
 				throw new Exception('cronFlusher->flushSchedule: '."Error: Could not install crontab with file - $tmpName - Got error $returnVar and output:\n".implode("\n", $output));
 			}
 
-			unlink($tmpName);
 
 			return $cron;
 		}
@@ -875,5 +876,36 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 	} // Class: netcatCommandBuilder
+
+
+	// Service class for getting back the right type of object for taking backups with
+	// based on the strategy employed for the scheduled backup
+	class backupTakerFactory {
+
+		// Return a backupSnapshotTaker object based on the backup strategy...
+		function getBackupTakerByStrategy($stratCode = false) {
+
+
+			switch($stratCode) {
+
+				case 'FULLONLY':
+				break;
+
+				case 'CONTINC':
+					return new continuousIncrementalBackupTaker();
+				break;
+
+				case 'ROTATING':
+				break;
+		
+				case false:
+				default:
+					throw new Exception('backupTakerFactory->getBackupTaker: '."Error: A type must be specified.");
+
+			}
+
+		}
+
+	} // Class: backupTakerFactory
 
 ?>
