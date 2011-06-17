@@ -3,20 +3,20 @@
 
 Copyright 2011 Marin Software
 
-This file is part of Xtrabackup Manager.
+This file is part of XtraBackup Manager.
 
-Xtrabackup Manager is free software: you can redistribute it and/or modify
+XtraBackup Manager is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 2 of the License, or
 (at your option) any later version.
 
-Xtrabackup Manager is distributed in the hope that it will be useful,
+XtraBackup Manager is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
+along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
@@ -709,9 +709,10 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			// Find the scheduled backup we are working in
 			$scheduledBackup = $seedSnapshot->getScheduledBackup();
 
-			$mergeSnapshot = new backupSnapshot();
 
-			$mergeSnapshot->init($scheduledBackup, 'SEED', 'MERGE');
+			// Init a new snapshot to be the SEED for the same snapshot group
+			$mergeSnapshot = new backupSnapshot();
+			$mergeSnapshot->init($scheduledBackup, 'SEED', 'MERGE', $seedSnapshot->getSnapshotGroup() );
 
 
 			// Set status to merging
@@ -725,7 +726,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$deltaPath = $deltaSnapshot->getPath();
 
 			// Find the xtrabackup binary to use
-			$xbBinary = $scheduledBackup->getXtrabackupBinary();
+			$xbBinary = $scheduledBackup->getXtraBackupBinary();
 		
 
 			// Merge the snapshots by their paths
@@ -896,6 +897,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				break;
 
 				case 'ROTATING':
+					return new rotatingBackupTaker();
 				break;
 		
 				case false:
@@ -907,5 +909,18 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 	} // Class: backupTakerFactory
+
+
+	// Service class for getting the next snapshot group
+	class backupSnapshotGroupFactory {
+
+		// Get the snapshot group that comes after the given group
+		// used to create the next snapshotGroup in sequence
+		function getNextSnapshotGroup($snapshotGroup) {
+
+			return new backupSnapshotGroup($snapshotGroup->scheduledBackupId, ($snapshotGroup->getNumber() + 1) );
+
+		}
+	}
 
 ?>

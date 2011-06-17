@@ -3,25 +3,25 @@
 
 Copyright 2011 Marin Software
 
-This file is part of Xtrabackup Manager.
+This file is part of XtraBackup Manager.
 
-Xtrabackup Manager is free software: you can redistribute it and/or modify
+XtraBackup Manager is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 2 of the License, or
 (at your option) any later version.
 
-Xtrabackup Manager is distributed in the hope that it will be useful,
+XtraBackup Manager is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
+along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 	
 	// Setup global defines that do not depend on anything else
-	define('XBM_RELEASE_VERSION', 'Xtrabackup Manager v0.1 - Copyright 2011 Marin Software');
+	define('XBM_RELEASE_VERSION', 'XtraBackup Manager v0.5 - Copyright 2011 Marin Software');
 
 	// Log levels, lower is more verbose
 	define('XBM_LOG_DEBUG', 0);
@@ -59,7 +59,9 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	require('mysqlType.class.php');
 	require('configCSV.class.php');
 	require('continuousIncrementalBackupTaker.class.php');
-
+	require('rotatingBackupTaker.class.php');
+	require('backupSnapshotGroup.class.php');
+	require('genericBackupTaker.class.php');
 
 	// Setup global defines that depend on other stuff
 	define('XBM_MAIN_LOG', $config['LOGS']['logdir'].'/xbm.log');

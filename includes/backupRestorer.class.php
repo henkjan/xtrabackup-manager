@@ -3,20 +3,20 @@
 
 Copyright 2011 Marin Software
 
-This file is part of Xtrabackup Manager.
+This file is part of XtraBackup Manager.
 
-Xtrabackup Manager is free software: you can redistribute it and/or modify
+XtraBackup Manager is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 2 of the License, or
 (at your option) any later version.
 
-Xtrabackup Manager is distributed in the hope that it will be useful,
+XtraBackup Manager is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
+along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
@@ -37,13 +37,26 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$this->infolog = $log;
 		}
 
-		// Restore $backupSnapshot to local path $path
-		function restoreLocal($backupSnapshot, $path) {
+		function validate($backupSnapshot) {
 
 			// Check we got an object
 			if(!is_object($backupSnapshot)) {
-				throw new Exception('backupRestorer->restoreLocal: '."Error: Expected a backupSnapshot object and did not get one.");
+				throw new Exception('backupRestorer->validate: '."Error: Expected a backupSnapshot object and did not get one.");
 			}
+
+			$snapInfo = $backupSnapshot->getInfo();
+			if($snapInfo['status'] != 'COMPLETED') {
+				throw new Exception('backupRestorer->validate: '."Error: This backupSnapshot is not in COMPLETED status.");
+			}
+
+			return true;
+
+		}
+
+		// Restore $backupSnapshot to local path $path
+		function restoreLocal($backupSnapshot, $path) {
+
+			$this->validate($backupSnapshot);
 
 			// Sanitise the path
 			if( ( $path == '/' ) || ( strlen($path) == 0 ) ) {
@@ -64,13 +77,16 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('backupRestorer->restoreLocal: '."Error: Attempted to change permissions for restore path, but failed -- $path");
 			}
 
-			// Strip trailing slace (and spaces if there are any for some weird reason
+			// Strip trailing space (and spaces if there are any for some weird reason
 			$path = rtrim($path, '/ ');
+
+			// Get the group for the backup and find the seed for that group.
+			$group = $backupSnapshot->getSnapshotGroup();
 
 			$scheduledBackup = $backupSnapshot->getScheduledBackup();
 
 			// Find the seed of the backupSnapshot
-			$seedSnapshot = $scheduledBackup->getSeed();
+			$seedSnapshot = $group->getSeed();
 
 			// Copy the seed to the right place
 			$seedPath = $seedSnapshot->getPath();
@@ -97,7 +113,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			if($seedSnapshot->id == $backupSnapshot->id) 
 				return true;
 
-			$xbBinary = $scheduledBackup->getXtrabackupBinary();
+			$xbBinary = $scheduledBackup->getXtraBackupBinary();
 
 			// Proceed with applying any incrementals needed to get to the snapshot we want!
 			$snapshotMerger = new backupSnapshotMerger();
@@ -118,7 +134,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			} while ( $deltaSnapshot->id != $backupSnapshot->id );
 
-			
+			$this->infolog->write('Local restore to '.$path.' complete!', XBM_LOG_INFO);
 			return true;	
 
 			
@@ -127,6 +143,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 	
 		function restoreRemote($backupSnapshot, $remoteExpression) {
+			$this->validate($backupSnapshot);
 			return false;
 		}
 

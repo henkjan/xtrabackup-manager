@@ -3,20 +3,20 @@
 
 Copyright 2011 Marin Software
 
-This file is part of Xtrabackup Manager.
+This file is part of XtraBackup Manager.
 
-Xtrabackup Manager is free software: you can redistribute it and/or modify
+XtraBackup Manager is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 2 of the License, or
 (at your option) any later version.
 
-Xtrabackup Manager is distributed in the hope that it will be useful,
+XtraBackup Manager is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
+along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
@@ -55,7 +55,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$conn = $dbGetter->getConnection($this->log);
 
 
-			$sql = "SELECT sb.*, bs.strategy_code FROM scheduled_backups sb JOIN backup_strategies bs ON sb.backup_strategy_id=bs.backup_strategy_id WHERE scheduled_backup_id=".$this->id;
+			$sql = "SELECT sb.*, bs.strategy_code, bs.strategy_name FROM scheduled_backups sb JOIN backup_strategies bs ON sb.backup_strategy_id=bs.backup_strategy_id WHERE scheduled_backup_id=".$this->id;
 
 
 			if( ! ($res = $conn->query($sql) ) ) {
@@ -128,7 +128,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		// Get the name of the command that should be used for xtrabackup
 		// based on the configured mysql_type of this scheduledBackup
-		function getXtrabackupBinary() {
+		function getXtraBackupBinary() {
 
 			$info = $this->getInfo();
 
@@ -145,6 +145,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 		// Return the valid seed of this scheduledBackup or false otherwise
+		// This should be replaced by use of snapshotGroup->getSeed()
 		function getSeed() {
 
 			global $config;
@@ -177,6 +178,39 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		}
 
+		// Get an array of the snapshot groups for the scheduledBackup
+		function getSnapshotGroupsNewestToOldest() {
+
+			global $config;
+
+			if(!is_numeric($this->id)) {
+				throw new Exception('scheduledBackup->getSnapshotGroupsNewestToOldest: '."Error: The ID for this object is not an integer.");
+			}
+
+			$dbGetter = new dbConnectionGetter($config);
+
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "SELECT DISTINCT snapshot_group_num FROM backup_snapshots WHERE scheduled_backup_id=".$this->id." AND status='COMPLETED' ORDER BY snapshot_group_num DESC";
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new Exception('scheduledBackup->getSnapshotGroupsNewestToOldest: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			$groups = Array();
+			while($row = $res->fetch_array() ) {
+				$groups[] = new backupSnapshotGroup($this->id, $row['snapshot_group_num']);
+			}
+
+			// If there are no groups in the DB, manually inject the initial group number 1...
+			if(sizeOf($groups) == 0 ) {
+				$groups[] = new backupSnapshotGroup($this->id, 1);
+			}
+
+
+			return $groups;
+
+		}
 
 
 		// Check to see if there is a running backup entry already for this scheduled backup
@@ -216,6 +250,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 
+
 		// Get the most recently completed scheduled backup snapshot
 		function getMostRecentCompletedBackupSnapshot() {
 
@@ -246,7 +281,6 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			return $snapshot;
 		}
-
 
 
 		// Get an array list of the scheduledBackup parameters

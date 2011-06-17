@@ -3,20 +3,20 @@
 
 Copyright 2011 Marin Software
 
-This file is part of Xtrabackup Manager.
+This file is part of XtraBackup Manager.
 
-Xtrabackup Manager is free software: you can redistribute it and/or modify
+XtraBackup Manager is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 2 of the License, or
 (at your option) any later version.
 
-Xtrabackup Manager is distributed in the hope that it will be useful,
+XtraBackup Manager is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
+along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
@@ -38,7 +38,7 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 
-		function init($scheduledBackup, $type, $creation_method, $parentId = false) {
+		function init($scheduledBackup, $type, $creation_method, $snapshotGroup, $parentId = false) {
 
 			global $config;
 
@@ -58,8 +58,9 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			if( $parentId === false ) {
 
-				$sql = "INSERT INTO backup_snapshots (scheduled_backup_id, type, creation_method) VALUES
-						(".$scheduledBackup->id.", '".$conn->real_escape_string($type)."', '".$conn->real_escape_string($creation_method)."' )";
+				$sql = "INSERT INTO backup_snapshots (scheduled_backup_id, type, creation_method, snapshot_group_num) VALUES
+						(".$scheduledBackup->id.", '".$conn->real_escape_string($type)."', '".$conn->real_escape_string($creation_method)."', "
+						.$snapshotGroup->getNumber()." )";
 
 			} else {
 
@@ -67,9 +68,9 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					throw new Exception('backupSnapshot->init: '."Error: Expected numeric parent ScheduledBackup ID and did not get one.");
 				}
 
-				$sql = "INSERT INTO backup_snapshots (scheduled_backup_id, type, creation_method, parent_snapshot_id) VALUES 
+				$sql = "INSERT INTO backup_snapshots (scheduled_backup_id, type, creation_method, snapshot_group_num, parent_snapshot_id) VALUES 
 						(".$scheduledBackup->id.", '".$conn->real_escape_string($type)."', '".$conn->real_escape_string($creation_method)."',
-							".$parentId.")";
+							".$snapshotGroup->getNumber().", ".$parentId.")";
 			}
 
 
@@ -167,6 +168,19 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 
+		function getSnapshotGroup() {
+
+			if(!is_numeric($this->id)) {
+				throw new Exception('backupSnapshot->getSnapshotGroup: '."Error: The ID for this object is not an integer.");
+			}
+
+			$snapInfo = $this->getInfo();
+
+			$snapshotGroup = new backupSnapshotGroup($snapInfo['scheduled_backup_id'], $snapInfo['snapshot_group_num']);
+
+			return $snapshotGroup;
+		}
+
 		// Change the status of the backup snapshot
 		// Fail if the row already has this state and nothing is changed..
 		function setStatus($status) {
@@ -228,6 +242,18 @@ along with Xtrabackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		}
 
+
+		// delete this snapshot - removes all files as well as marking it as "DELETED".
+		function delete() {
+
+			$this->setStatus('DELETING');
+			$this->deleteFiles();
+			$this->setStatus('DELETED');
+
+			return true;
+
+
+		}
 
 		// Completely removes all files from the backup snapshot directory and the directory itself
 		function deleteFiles() {
