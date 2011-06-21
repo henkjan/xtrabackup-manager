@@ -119,7 +119,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			// If this group has a seed snapshot, then take incremental...
 			if($seedSnap) {
-				$backupTaker->takeIncrementalBackupSnapshot($scheduledBackup, $sbGroups[0], $seedSnap );
+				$backupTaker->takeIncrementalBackupSnapshot($scheduledBackup, $sbGroups[0], $sbGroups[0]->getMostRecentCompletedBackupSnapshot() );
 			// Otherwise take a FULL backup
 			} else {
 				$backupTaker->takeFullBackupSnapshot($scheduledBackup, $sbGroups[0]);
