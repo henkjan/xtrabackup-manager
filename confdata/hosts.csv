@@ -1,2 +1,2 @@
-host_id	hostname	description	last_backup	active	staging_path
-1	mybackuphost.mydomain.com	Example DB to Backup	\N	Y	/tmp
+host_id	hostname	description	last_backup	active	staging_path	system_type
+6	mybackuphost.mydomain.com	Example DB to Backup	\N	Y	/tmp	Linux
