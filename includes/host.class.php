@@ -62,8 +62,6 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 	
 			$info = $res->fetch_array();
-			if(empty($info['last_backup']))
-				$info['last_backup'] = 'Never';
 
 			return $info;
 

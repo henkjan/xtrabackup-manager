@@ -35,7 +35,7 @@ CREATE TABLE `backup_snapshots` (
   PRIMARY KEY  (`backup_snapshot_id`),
   KEY `i_scheduled_backup` (`scheduled_backup_id`),
   KEY `i_parent_snapshot` (`parent_snapshot_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=119 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -74,9 +74,10 @@ CREATE TABLE `backup_strategy_params` (
   `backup_strategy_param_id` int(10) unsigned NOT NULL auto_increment,
   `backup_strategy_id` int(10) unsigned NOT NULL,
   `param_name` varchar(128) NOT NULL default '',
+  `default_value` varchar(64),
   PRIMARY KEY  (`backup_strategy_param_id`),
   KEY `i_backup_strategy_id` (`backup_strategy_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -85,7 +86,7 @@ SET character_set_client = @saved_cs_client;
 
 LOCK TABLES `backup_strategy_params` WRITE;
 /*!40000 ALTER TABLE `backup_strategy_params` DISABLE KEYS */;
-INSERT INTO `backup_strategy_params` VALUES (1,1,'max_snapshots'),(2,2,'max_snapshots'),(3,2,'maintain_materialized_copy'),(4,3,'rotate_method'),(5,3,'rotate_day_of_week'),(6,3,'max_snapshots_per_group'),(7,3,'backup_skip_fatal'),(8,3,'rotate_snapshot_no'),(9,3,'max_snapshot_groups'),(10,3,'maintain_materialized_copy');
+INSERT INTO `backup_strategy_params` VALUES (1,1,'max_snapshots',7),(2,2,'max_snapshots',7),(3,2,'maintain_materialized_copy',1),(4,3,'rotate_method','DAY_OF_WEEK'),(5,3,'rotate_day_of_week',0),(6,3,'max_snapshots_per_group',7),(7,3,'backup_skip_fatal',1),(8,3,'rotate_snapshot_no',7),(9,3,'max_snapshot_groups',2),(10,3,'maintain_materialized_copy',1);
 /*!40000 ALTER TABLE `backup_strategy_params` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -101,7 +102,7 @@ CREATE TABLE `backup_volumes` (
   `name` varchar(256) NOT NULL default '',
   `path` varchar(1024) NOT NULL default '',
   PRIMARY KEY  (`backup_volume_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -115,12 +116,10 @@ CREATE TABLE `hosts` (
   `host_id` int(10) unsigned NOT NULL auto_increment,
   `hostname` varchar(256) NOT NULL default '',
   `description` varchar(256) NOT NULL default '',
-  `last_backup` datetime default NULL,
   `active` enum('Y','N') default 'Y',
   `staging_path` varchar(1024) NOT NULL default '/tmp',
-  `system_type` varchar(64) default 'Linux',
   PRIMARY KEY  (`host_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -135,7 +134,7 @@ CREATE TABLE `mysql_types` (
   `type_name` varchar(256) NOT NULL default '',
   `xtrabackup_binary` varchar(128) NOT NULL default '',
   PRIMARY KEY  (`mysql_type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -165,7 +164,7 @@ CREATE TABLE `running_backups` (
   PRIMARY KEY  (`running_backup_id`),
   UNIQUE KEY `i_port` (`port`),
   UNIQUE KEY `i_scheduled_backup` (`scheduled_backup_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -206,7 +205,7 @@ CREATE TABLE `scheduled_backups` (
   `backup_strategy_id` int(10) unsigned NOT NULL default '1',
   PRIMARY KEY  (`scheduled_backup_id`),
   KEY `i_host` (`host_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -219,4 +218,3 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2011-06-17  5:20:01

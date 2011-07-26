@@ -140,7 +140,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						$xbCommand .= " --no-lock ";
 					}
 		
-					$ncClient = $ncBuilder->getClientCommand($config['SYSTEM']['xbm_hostname'], $rbInfo['port'], $hostInfo['system_type']);
+					$ncClient = $ncBuilder->getClientCommand($config['SYSTEM']['xbm_hostname'], $rbInfo['port']);
 					$xbCommand .= " | ".$ncClient.
 								' ; exit ${PIPESTATUS[0]}\''; // Makes sure the command run on the remote machine returns the exit status of innobackupex, which is what SSH will return
 			
@@ -463,7 +463,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					// Info output
 					$this->infolog->write("Started Netcat (nc) listener on port ".$rbInfo['port']." to receive backup tar stream into directory $path ...", XBM_LOG_INFO);
 		
-					$ncClient = $ncBuilder->getClientCommand($config['SYSTEM']['xbm_hostname'], $rbInfo['port'], $hostInfo['system_type']);
+					$ncClient = $ncBuilder->getClientCommand($config['SYSTEM']['xbm_hostname'], $rbInfo['port']);
 					// Copy the backup back via the netcat listener
 					$copyCommand = "ssh ".$sbInfo['backup_user']."@".$hostInfo['hostname']." 'cd $tempDir; tar cvf - . | ".$ncClient." '";
 	

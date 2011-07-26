@@ -69,7 +69,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	
 					print("Host ID: ".$hostInfo['host_id']."  Hostname: ".$hostInfo['hostname']."\n");
 					print("Description: ".$hostInfo['description']."\n");
-					print("Active: ".$hostInfo['active']."  Last Backup: ".$hostInfo['last_backup']."\n");
+					print("Active: ".$hostInfo['active']."  Last Backup: Display broken for now\n");
 					print("\n");
 				}
 			}

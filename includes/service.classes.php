@@ -863,16 +863,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		// get a netcat (nc) command to use to create a netcat sender/client - connecting to $host on port $port
 		// specify a systemType if you like, otherwise detect the type of current system
-		function getClientCommand($host, $port, $systemType = PHP_OS) {
+		function getClientCommand($host, $port) {
 
-			switch( $systemType ) {
-				// Currently we can use some BASH magic to make this work on both Nexenta and Linux
-				// By default attempt to auto-detect if we have a netcat version that has the -q option mentioned in help output
-				// in this case it means netcat does not listen to EOF on stdin without it, so we must add it like -q0
-				default:
-					return '`if [ \`nc -h 2>&1|grep -c "\-q"\` -gt 0 ]; then NC="nc -q0"; else NC="nc"; fi; echo "$NC '.$host.' '.$port.'"`';
-					break;
-			}
+			// Currently we can use some BASH magic to make this work on both Nexenta and Linux
+			// By default attempt to auto-detect if we have a netcat version that has the -q option mentioned in help output
+			// in this case it means netcat does not listen to EOF on stdin without it, so we must add it like -q0
+			return '`if [ \`nc -h 2>&1|grep -c "\-q"\` -gt 0 ]; then NC="nc -q0"; else NC="nc"; fi; echo "$NC '.$host.' '.$port.'"`';
 
 		}
 
