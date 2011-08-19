@@ -280,7 +280,6 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$this->infolog->write("Backup completed successfully!", XBM_LOG_INFO);
 	
 				} catch (Exception $e) {
-					$this->infolog->write($e->getMessage(), XBM_LOG_ERROR);
 					// Remove files and make status failed
 					$snapshot->deleteFiles();
 					$snapshot->setStatus('FAILED');
@@ -290,7 +289,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 			} catch (Exception $e) {
-
+				// Write error to log
+				$this->infolog->write($e->getMessage(), XBM_LOG_ERROR);
 				// Clean up our runningBackup locks then rethrow..
 				$runningBackup->finish();
 				throw new Exception($e->getMessage());
@@ -529,6 +529,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				}
 		
 			} catch (Exception $e) {
+				// Write error to log
+				$this->infolog->write($e->getMessage(), XBM_LOG_ERROR);
 				// Clean up the running backup entry and rethrow error..
 				$runningBackup->finish();
 				throw new Exception($e->getMessage());
