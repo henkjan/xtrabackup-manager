@@ -283,6 +283,38 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 
+        // Get the most recently completed materialized snapshot
+        function getMostRecentCompletedMaterializedSnapshot() {
+
+            global $config;
+
+            if(!is_numeric($this->id)) {
+                throw new Exception('scheduledBackup->getMostRecentCompletedMaterializedSnapshot: '."Error: The ID for this object is not an integer.");
+            }
+
+            $dbGetter = new dbConnectionGetter($config);
+
+            $conn = $dbGetter->getConnection($this->log);
+
+            $sql = "SELECT materialized_snapshot_id FROM materialized_snapshots WHERE status='COMPLETED' AND scheduled_backup_id=".$this->id." ORDER BY creation_time DESC LIMIT 1";
+
+            if( ! ($res = $conn->query($sql) ) ) {
+                throw new Exception('scheduledBackup->getMostRecentCompletedMaterializedSnapshot: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+            }
+
+            if( $res->num_rows < 1 ) {
+				return false;
+            }
+
+            $row = $res->fetch_array();
+
+            $snapshotGetter = new materializedSnapshotGetter();
+            $snapshot = $snapshotGetter->getById($row['materialized_snapshot_id']);
+
+            return $snapshot;
+        }
+
+
 		// Get an array list of the scheduledBackup parameters
 		function getParameters() {
 

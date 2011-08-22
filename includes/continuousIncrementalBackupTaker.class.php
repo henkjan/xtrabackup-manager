@@ -199,6 +199,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 
+		// Handle any postProcessing
+		function postProcess($scheduledBackup = false) {
+			return true;
+		}
+
 	}
 
 ?>

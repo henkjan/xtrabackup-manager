@@ -642,6 +642,48 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 	}
 
+	// Service class to get backupSnapshot objects.
+	class materializedSnapshotGetter {
+
+		function __construct() {
+			$this->log = false;
+		}
+
+		function setLogStream($log) {
+			$this->log = $log;
+		}
+
+		function getById($id) {
+
+			if(!is_numeric($id) ) {
+				throw new Exception('materializedSnapshotGetter->getById: '."Error: The ID for this object is not an integer.");
+			}
+
+			$dbGetter = new dbConnectionGetter();
+
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "SELECT materialized_snapshot_id FROM materialized_snapshots WHERE materialized_snapshot_id=".$id;
+
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new Exception('materializedSnapshotGetter->getById: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			if($res->num_rows != 1) {
+				throw new Exception('materializedSnapshotGetter->getById: '."Error: Could not retrieve a Materialized Snapshot with ID $id.");
+			}
+
+			$materializedSnapshot = new materializedSnapshot($id);
+			$materializedSnapshot->setLogStream($this->log);
+
+			return $materializedSnapshot;
+		}
+
+	}
+
+
+
 	// Service class for making temporary directories
 	class remoteTempDir {
 

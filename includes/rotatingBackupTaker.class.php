@@ -51,6 +51,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$this->launchTime = $launchTime;
 		}
 
+		// Validate the parameters for this backup strategy 
 		function validateParams($sbParams) {
 
 
@@ -186,6 +187,16 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('rotatingBackupTaker->validateParams: '."Error: max_snapshot_groups must be >= 1.");
 			}
 
+			// validate maintain_materialized_copy (if set)
+			if(isSet($sbParams['maintain_materialized_copy']) ) {
+
+				// must be 0 or 1
+				if( preg_match('/^[01]$/', $sbParams['maintain_materialized_copy']) !== 1 ) {
+					throw new Exception('rotatingBackupTaker->validateParams: '."Error: maintain_materialized_copy must be set to either 1=Yes or 0=No.");
+				}
+			
+			}
+
 			//
 			// If we made it this far, the backup parameters should be valid... proceed with the actual backup!
 			//
@@ -308,7 +319,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					// if yes - stop and if we treat this critical throw an exception/failure
 					if( sizeOf($snapshots) >= $sbParams['max_snapshots_per_group'] ) {
 
-						if( $sbParams['backup_skip_fatal'] == 1 ) {
+						if( !isSet($sbParams['backup_skip_fatal']) || $sbParams['backup_skip_fatal'] == 1 ) {
 
 							throw new Exception('rotatingBackupTaker->takeScheduledBackupSnapshot: '."Error: Refusing to take another backup, as max_snapshots_per_group would be exceeded.");
 						}
@@ -387,6 +398,35 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		}
 
+		// Handle any postProcessing
+		function postProcess($scheduledBackup = false) {
+
+			// Validate
+			if($scheduledBackup === false || !is_object($scheduledBackup) ) {
+				throw new Exception('rotatingBackupTaker->postProcess: '."Error: Expected a scheduledBackup object to be passed as a parameter, but did not get one.");
+			}
+
+			// Get Params
+			$sbParams = $scheduledBackup->getParameters();
+			$this->validateParams($sbParams);
+
+			// If maintain_materialized_copy is set and enabled, then we need to make sure we keep the latest restore available 
+			if(isSet($sbParams['maintain_materialized_copy']) && ($sbParams['maintain_materialized_copy'] == 1) ) {
+
+				$this->infolog->write("Maintain materialized copy feature is enabled for this backup -- materializing latest backup ...", XBM_LOG_INFO);
+
+				$manager = new materializedSnapshotManager();
+				$manager->setInfoLogStream($this->infolog);
+				$manager->setLogStream($this->log);
+				$manager->materializeLatest($scheduledBackup);
+				$this->infolog->write("Completed materializing latest backup.", XBM_LOG_INFO);
+
+			}
+
+
+
+			return true;
+		}
 
 	}
 

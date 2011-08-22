@@ -27,6 +27,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		function __construct() {
 			$this->log = false;
+			$this->infolog = false;
 		}
 
 		function setLogStream($log) {

@@ -141,9 +141,15 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			// Kick off takeScheduledBackupSnapshot method of the actual backup taker
 			$backupTaker->takeScheduledBackupSnapshot($scheduledBackup);
 
+			// Apply the retention policy
 			$this->infolog->write("Applying snapshot retention policy ...", XBM_LOG_INFO);
 			$backupTaker->applyRetentionPolicy($scheduledBackup);
 			$this->infolog->write("Application of retention policy complete.", XBM_LOG_INFO);
+
+			// Perform any post processing
+			$this->infolog->write("Performing any post-processing necessary ...", XBM_LOG_INFO);
+			$backupTaker->postProcess($scheduledBackup);
+			$this->infolog->write("Post-processing completed.", XBM_LOG_INFO);
 
 			$this->infolog->write("Scheduled Backup Task Complete!", XBM_LOG_INFO);
 
