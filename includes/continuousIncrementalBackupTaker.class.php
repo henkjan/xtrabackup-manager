@@ -201,7 +201,33 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		// Handle any postProcessing
 		function postProcess($scheduledBackup = false) {
+
+			// Validate
+			if($scheduledBackup === false || !is_object($scheduledBackup) ) {
+				throw new Exception('continuousIncrementalBackupTaker->postProcess: '."Error: Expected a scheduledBackup object to be passed as a parameter, but did not get one.");
+			}
+
+			// Get Params
+			$sbParams = $scheduledBackup->getParameters();
+			$this->validateParams($sbParams);
+
+			// If maintain_materialized_copy is set and enabled, then we need to make sure we keep the latest restore available 
+			if(isSet($sbParams['maintain_materialized_copy']) && ($sbParams['maintain_materialized_copy'] == 1) ) {
+
+				$this->infolog->write("Maintain materialized copy feature is enabled for this backup -- materializing latest backup ...", XBM_LOG_INFO);
+
+				$manager = new materializedSnapshotManager();
+				$manager->setInfoLogStream($this->infolog);
+				$manager->setLogStream($this->log);
+				$manager->materializeLatest($scheduledBackup);
+				$this->infolog->write("Completed materializing latest backup.", XBM_LOG_INFO);
+
+			}
+
+
+
 			return true;
+
 		}
 
 	}
