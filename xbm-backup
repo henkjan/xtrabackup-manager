@@ -138,7 +138,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			}
 
-			$msg .= "-- \nThis was an automated message from XtraBackup Manager ".XBM_RELEASE_VERSION."\n\n";
+			$msg .= "-- \nThis was an automated message from ".XBM_RELEASE_VERSION."\n\n";
 
 			if( ! mail($config['ALERTS']['email'], $subj, $msg, 'From: XtraBackup Manager <'.$config['ALERTS']['replyto'].'>') ) {
 					$log->write(basename(__FILE__).": Error: Failed to send alert email!", XBM_LOG_ERROR);

@@ -839,7 +839,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			// Actually kick off the process to do it here...
-			$mergeCommand = $xbBinary.' --prepare --apply-log-only --target-dir='.$seedPath.' --incremental-dir='.$deltaPath.' 1>&2';
+			$mergeCommand = $xbBinary.' --defaults-file='.$seedPath.'/backup-my.cnf --prepare --apply-log-only --target-dir='.$seedPath.' --incremental-dir='.$deltaPath.' 1>&2';
 			
 
 			$mergeDescriptors = Array(
@@ -870,7 +870,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			// Check exit status
 			if($mergeStatus['exitcode'] <> 0 ) {
 				throw new Exception('backupSnapshotMerger->mergePaths: '."Error: There was an error merging snapshots - The process returned code ".$mergeStatus['exitcode'].".\n".
-								"The command issues was:\n".$mergeCommand."\n".
+								"The command issued was:\n".$mergeCommand."\n".
 								"The output is as follows:\n".$streamContents);
 			}
 
