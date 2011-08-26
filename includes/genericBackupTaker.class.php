@@ -219,7 +219,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			
 					// Build the command for applying log
 					//$applyCommand = ' cd '.$path.' ; innobackupex-1.5.1 --apply-log --ibbackup='.$xbBinary.' --defaults-file=backup-my.cnf ./ 1>&2';
-					$applyCommand = $xbBinary." --defaults-file=".$path."/backup-my.cnf --prepare --apply-log-only --target-dir=".$path." 1>&2";
+					$applyCommand = $xbBinary." --defaults-file=".$path."/backup-my.cnf --use-memory=".$config['SYSTEM']['xtrabackup_use_memory']." --prepare --apply-log-only --target-dir=".$path." 1>&2";
 			
 					// Set up how we'll interact with the IO file handlers of the process
 					$applyDescriptors = Array(
@@ -281,7 +281,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	
 				} catch (Exception $e) {
 					// Remove files and make status failed
-					$snapshot->deleteFiles();
+					if($config['cleanup_on_failure'] == true ) {
+						$this->infolog->write("Cleaning up files after failure...");
+						$snapshot->deleteFiles();
+					} else {
+						$this->infolog->write("Skipping cleanup as cleanup_on_failure is turned off...");
+					}
 					$snapshot->setStatus('FAILED');
 					// Rethrow
 					throw new Exception($e->getMessage());
@@ -521,10 +526,16 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 					$this->infolog->write("Completed copying the backup via netcat with the following output:\n".$streamContents, XBM_LOG_INFO);
 
-				} catch(Exception $e) {
+				} catch (Exception $e) {
 					// Remove the snapshot files and mark it as failed.
-					$snapshot->deleteFiles();
+					if($config['cleanup_on_failure'] == true ) {
+						$this->infolog->write("Cleaning up files after failure...");
+						$snapshot->deleteFiles();
+					} else {
+						$this->infolog->write("Skipping cleanup as cleanup_on_failure is turned off...");
+					}
 					$snapshot->setStatus('FAILED');
+
 					throw new Exception($e->getMessage());
 				}
 		

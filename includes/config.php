@@ -40,6 +40,18 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	$config['SYSTEM']['port_range']['low'] = 10000;
 	$config['SYSTEM']['port_range']['high'] = 11000;
 
+	// Whether or not to clean up after ourselves when a backup fails
+	// Keeping the files around can be useful for troubleshooting what may have gone wrong
+	$config['SYSTEM']['cleanup_on_failure'] = 0;
+
+
+	// How much memory to allocate when performing --apply-log
+	// This is given to xtrabackup / innobackupex as --use-memory parameter when
+	// applying deltas or preparing backups after copying files.
+
+	// Using 1G default - be mindful of this multiplied by possible concurrent backup jobs
+	$config['SYSTEM']['xtrabackup_use_memory'] = 1073741824; 
+
 	// How many can run at once
 	// Globally in this install of XBM
 	$config['SYSTEM']['max_global_concurrent_backups'] = 4;

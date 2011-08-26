@@ -839,7 +839,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			// Actually kick off the process to do it here...
-			$mergeCommand = $xbBinary.' --defaults-file='.$seedPath.'/backup-my.cnf --prepare --apply-log-only --target-dir='.$seedPath.' --incremental-dir='.$deltaPath.' 1>&2';
+			$mergeCommand = $xbBinary.' --defaults-file='.$seedPath.'/backup-my.cnf --use-memory='.$config['SYSTEM']['xtrabackup_use_memory'].
+										' --prepare --apply-log-only --target-dir='.$seedPath.' --incremental-dir='.$deltaPath.' 1>&2';
 			
 
 			$mergeDescriptors = Array(
