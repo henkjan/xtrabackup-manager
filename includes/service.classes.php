@@ -165,6 +165,73 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			return $volume;
 		}
 
+
+		// Get volume by Name
+		function getByName($name) {
+
+			global $config;
+
+			if( ! ( strlen($name) > 0 ) ) {
+				throw new Exception('volumeGetter->getByName: '."Error: Expected a name with length > 0 as a parameter, but did not get one.");
+			}
+
+			$dbGetter = new dbConnectionGetter();
+
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "SELECT backup_volume_id FROM backup_volumes WHERE name='".$conn->real_escape_string($name)."'";
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new Exception('volumeGetter->getByName: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			if($res->num_rows != 1 ) {
+				return false;
+			}
+
+			if( ! ( $row = $res->fetch_array() ) ) {
+				throw new Exception('volumeGetter->getByName: '."Error: Could not retrieve the ID for Volume with Name: $name.");
+			}
+
+			$volume = new backupVolume($row['backup_volume_id']);
+			$volume->setLogStream($this->log);
+
+			return $volume;
+		}
+
+
+		// Get a new volume with this name and path...
+		function getNew($volumeName, $volumePath) {
+
+			$volumePath = rtrim($volumePath, '/');
+
+			backupVolume::validateName($volumeName);
+			backupVolume::validatePath($volumePath);
+
+			if( $existing = $this->getByName($volumeName) ) {
+				throw new ProcessingException("Error: A Volume already exists with a name matching: $volumeName");
+			}
+
+
+			// INSERT the row
+			$dbGetter = new dbConnectionGetter();
+
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "INSERT INTO backup_volumes (name, path) VALUES ('".$conn->real_escape_string($volumeName)."', "
+				."'".$conn->real_escape_string($volumePath)."')";
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new DBException('volumeGetter->getNew: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			$volume = new backupVolume($conn->insert_id);
+			$volume->setLogStream($this->log);
+
+			return $volume;
+
+		}
+
 	}
 
 

@@ -64,6 +64,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	require('genericBackupTaker.class.php');
 	require('materializedSnapshot.class.php');
 	require('materializedSnapshotManager.class.php');
+	require('cliHandler.class.php');
+	require('exception.classes.php');
 
 	// Setup global defines that depend on other stuff
 	define('XBM_MAIN_LOG', $config['LOGS']['logdir'].'/xbm.log');

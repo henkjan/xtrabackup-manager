@@ -99,9 +99,10 @@ SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
 CREATE TABLE `backup_volumes` (
   `backup_volume_id` int(10) unsigned NOT NULL auto_increment,
-  `name` varchar(256) NOT NULL default '',
+  `name` varchar(128) NOT NULL default '',
   `path` varchar(1024) NOT NULL default '',
-  PRIMARY KEY  (`backup_volume_id`)
+  PRIMARY KEY  (`backup_volume_id`),
+  UNIQUE KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
