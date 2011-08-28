@@ -47,14 +47,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		// The main functin of this class - take the snapshot for a scheduled backup based on the backup strategy
 		// Takes a scheduledBackup object as a param
-		function takeScheduledBackupSnapshot ( $scheduledBackup = false ) {
+		function takeScheduledBackupSnapshot ( scheduledBackup $scheduledBackup  ) {
 
 			global $config;
-
-			// Quick input validation...
-			if($scheduledBackup === false ) {
-				throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Expected a scheduledBackup object to be passed to this function and did not get one.");
-			}
 
 			$this->launchTime = time();
 
