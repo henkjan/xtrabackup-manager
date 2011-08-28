@@ -716,13 +716,14 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			$sql = "SELECT running_backup_id FROM running_backups WHERE scheduled_backup_id=".$scheduledBackup->id;
 
+
 			if( ! ($res = $conn->query($sql) ) ) {
 				throw new Exception('runningBackupGetter->getByScheduledBackup: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			$runningBackups = Array();
 			while($row = $res->fetch_array() ) {
-				$this->runningBackups[] = new runningBackup($row['running_backup_id']);
+				$runningBackups[] = new runningBackup($row['running_backup_id']);
 			}
 
 			return $runningBackups;
