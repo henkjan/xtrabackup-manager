@@ -162,6 +162,7 @@ CREATE TABLE `running_backups` (
   `port` int(10) unsigned default NULL,
   `started` timestamp NOT NULL default CURRENT_TIMESTAMP,
   `staging_tmpdir` varchar(1024) default NULL,
+  `pid` int(10) unsigned NOT NULL,
   PRIMARY KEY  (`running_backup_id`),
   UNIQUE KEY `i_port` (`port`),
   UNIQUE KEY `i_scheduled_backup` (`scheduled_backup_id`)
@@ -206,6 +207,23 @@ CREATE TABLE `scheduled_backups` (
   `backup_strategy_id` int(10) unsigned NOT NULL default '1',
   PRIMARY KEY  (`scheduled_backup_id`),
   KEY `i_host` (`host_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `queue_tickets`
+--
+
+DROP TABLE IF EXISTS `queue_tickets`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `queue_tickets` (
+  `queue_ticket_id` int(10) unsigned NOT NULL auto_increment,
+  `queue_name` varchar(64) default NULL,
+  `entry_time` datetime NOT NULL,
+  `pid` int(10) unsigned NOT NULL,
+  PRIMARY KEY  (`queue_ticket_id`),
+  UNIQUE KEY `i_name_entry` (`queue_name`,`entry_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 

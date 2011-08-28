@@ -116,26 +116,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('host->getRunningBackups: '."Error: The ID for this object is not an integer.");
 			}
 
+			$backupGetter = new runningBackupGetter();
+			$backupGetter->setLogStream($this->log);
 
-			$dbGetter = new dbConnectionGetter($config);
-
-
-			$conn = $dbGetter->getConnection($this->log);
-
-
-			$sql = "SELECT running_backup_id FROM running_backups WHERE host_id=".$this->id;
-
-
-			if( ! ($res = $conn->query($sql) ) ) {
-				throw new Exception('host->getRunningBackups: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
-			}
-
-			$runningBackups = Array();
-			while($row = $res->fetch_array() ) {
-				$runningBackups[] = new runningBackup($row['running_backup_id']);
-			}
-
-			return $runningBackups;
+			return $backupGetter->getByHost($this);
 
 		}
 

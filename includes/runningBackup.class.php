@@ -81,7 +81,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				}
 
 
-				$sql = "INSERT INTO running_backups (host_id, scheduled_backup_id, port) VALUES (".$host->id.", ".$scheduledBackup->id.", ".$portFinder->availablePort.")";
+				$sql = "INSERT INTO running_backups (host_id, scheduled_backup_id, port, pid) VALUES (".$host->id.", ".$scheduledBackup->id.", ".$portFinder->availablePort.", ".getmypid().")";
 
 				if( ! $conn->query($sql) ) {
 

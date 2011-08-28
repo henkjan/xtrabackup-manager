@@ -600,11 +600,48 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		function setLogStream($log) {
 			$this->log = $log;
 		}   
-		
+
+		// Clean the list of running backups - remove entries for pids that are not running	
+		function cleanRunningBackups() {
+
+			global $config;
+
+			$dbGetter = new dbConnectionGetter();
+
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "SELECT running_backup_id, pid FROM running_backups";
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new Exception('runningBackupGetter->cleanRunningBackups: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			// Iterate over all running backups
+			while($row = $res->fetch_array() ) {
+
+				// Check to see if entry in proc filesystem exists (process is running)
+				if(!file_exists('/proc/'.$row['pid'])) {
+
+					// Remove entry if it is not found..
+					$sql = "DELETE FROM running_backups WHERE running_backup_id=".$row['running_backup_id'];
+					if( ! $conn->query($sql) ) {
+						throw new Exception('runningBackupGetter->cleanRunningBackups: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+					}
+
+				}
+			}
+
+			return;
+
+		}	
+
 		// Get all scheduledBackup objects
 		function getAll() {
 		
 			global $config;
+
+			// Clean the list before we return it
+			$this->cleanRunningBackups();
 			
 			$dbGetter = new dbConnectionGetter();
 			
@@ -629,6 +666,68 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			
 		}
 
+
+		// return runningBackups by host
+		function getByHost(host $host) {
+
+			global $config;
+
+			// Clean the list of backups before we query it
+			$this->cleanRunningBackups();
+
+			if(!is_numeric($host->id)) {
+				throw new Exception('runningBackupGetter->getByHost: '."Error: The ID for the given host object is not an integer.");
+			}
+
+			$dbGetter = new dbConnectionGetter($config);
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "SELECT running_backup_id FROM running_backups WHERE host_id=".$host->id;
+
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new Exception('runningBackupGetter->getByHost: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			$runningBackups = Array();
+			while($row = $res->fetch_array() ) {
+				$runningBackups[] = new runningBackup($row['running_backup_id']);
+			}
+
+			return $runningBackups;
+
+		}
+
+		// return runningBackups by scheduledBackup
+		function getByScheduledBackup(scheduledBackup $scheduledBackup) {
+
+			global $config;
+
+			// Clean the list of backups before we query it
+			$this->cleanRunningBackups();
+
+			// Verify the ID is numeric
+			if(!is_numeric($scheduledBackup->id)) {
+				throw new Exception('runningBackupGetter->getByScheduledBackup: '."Error: The ID for the given scheduledBackup object is not an integer.");
+			}
+
+			$dbGetter = new dbConnectionGetter($config);
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "SELECT running_backup_id FROM running_backups WHERE scheduled_backup_id=".$scheduledBackup->id;
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new Exception('runningBackupGetter->getByScheduledBackup: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			$runningBackups = Array();
+			while($row = $res->fetch_array() ) {
+				$this->runningBackups[] = new runningBackup($row['running_backup_id']);
+			}
+
+			return $runningBackups;
+
+		}
 
 	}
 
@@ -997,6 +1096,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			switch($stratCode) {
 
 				case 'FULLONLY':
+					throw new Exception('backupTakerFactory->getBackupTaker: '."Error: FULLONLY backup method is not yet supported.");
 				break;
 
 				case 'CONTINC':
@@ -1028,6 +1128,135 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			return new backupSnapshotGroup($snapshotGroup->scheduledBackupId, ($snapshotGroup->getNumber() + 1) );
 
 		}
+	}
+
+
+	// Service class for managing waiting in queues
+	// eg. Ensures First in First Out (FIFO) when threads enter sleep/wait cycles 
+	// if there are too man backups running, etc.
+	class queueManager {
+
+		function setLogStream($log) {
+			$this->log = $log;
+		}
+
+		function setInfoLogStream($log) {
+			$this->infolog = $log;
+		}
+
+		// Get a ticket number in the queue of the specified name
+		function getTicketNumber($queueName) {
+
+			// Clean the queue before we get new tickets
+			$this->cleanQueue($queueName);
+
+			$dbGetter = new dbConnectionGetter();
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "INSERT INTO queue_tickets (queue_ticket_id, queue_name, entry_time, pid) VALUES (NULL, '".$conn->real_escape_string($queueName)."', NOW(), ".getmypid().")";
+
+			$attempts = 0;
+
+			while ($attempts < 5 ) {
+
+				$attempts++;
+
+				if( ! $conn->query($sql) ) {
+
+					// If somebody already has an entry for the very same queueName/entry_time by some fluke.. sleep & retry..
+					if($conn->errno == 1063 && stristr($conn->error, 'key 2')) {
+
+						// Sleep only 1 second between retries in this case
+						// ... chance of collision is very low, and we want to try
+						// and take our rightful position in the queue before anyone else comes along.
+						sleep(1);
+						continue;
+
+					// If the error was real, throw exception...
+					} else {
+						throw new DBException('queueManager->getTicketNumber: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+					}
+
+
+				}
+
+			} // end while
+
+			// return the ticket number
+			return $conn->insert_id;
+
+		}
+
+		// Check if we are at the front of the queue
+		function checkFrontOfQueue($queueName, $ticketNumber) {
+
+			if(!is_numeric($ticketNumber)) {
+				throw new Exception('queueManager->checkFrontOfQueue: '."Error: Expected a numeric ticket number, but did not get one.");
+			}
+
+			// Clean the queue before we check it
+			$this->cleanQueue($queueName);
+
+			$dbGetter = new dbConnectionGetter();
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "SELECT queue_ticket_id FROM queue_tickets WHERE queue_name='".$conn->real_escape_string($queueName)."' AND queue_ticket_id=".$ticketNumber;
+
+			if( ! ( $res = $conn->query($sql) ) ) {
+				throw new DBException('queueManager->checkFrontOfQueue: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			if($res->num_rows == 0) {
+				throw new Exception('queueManager->checkFrontOfQueue: '."Error Could not find ticket number ".$ticketNumber." in queue with name: ".$queueName);
+			}
+
+			$sql = "SELECT queue_ticket_id FROM queue_tickets WHERE queue_name='".$conn->real_escape_string($queueName)."' ORDER BY entry_time ASC LIMIT 1";
+
+			if( ! ( $res = $conn->query($sql) ) ) {
+				throw new DBException('queueManager->checkFrontOfQueue: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			if( ! ( $row = $res->fetch_array() ) ) {
+				throw new DBException('queueManager->checkFrontOfQueue: '."Error: An unexpected error occurred when trying to get the state of queue with name: ".$queueName);
+			}
+
+			// Check if our ticket number is the one at the front.. true if yes, false if not
+			if( $row['queue_ticket_id'] == $ticketNumber ) {
+				return true;
+			} else {
+				return false;
+			}
+
+		}
+
+		// Check this queue and remove any entry that belongs to a pid that is not actually running
+		function cleanQueue($queueName) {
+
+			$dbGetter = new dbConnectionGetter();
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "SELECT queue_ticket_id, pid FROM queue_tickets WHERE queue_name='".$conn->real_escape_string($queueName)."'";
+
+			if( ! ( $res = $conn->query($sql) ) ) {
+				throw new DBException('queueManager->cleanQueue: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			// Iterate over all the queue tickets for this queue...
+			while($row = $res->fetch_array() ) {
+
+				// Check if there is an entry in /proc filesystem for the pid
+				if(!file_exists('/proc/'.$row['pid']) ) {
+					// If not, DELETE this entry from the queue_tickets table
+					$sql = "DELETE FROM queue_tickets WHERE queue_ticket_id=".$row['queue_ticket_id'];
+					if( ! $conn->query($sql) ) {
+						throw new DBException('queueManager->cleanQueue: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+					}
+				}				
+			}
+
+			return;
+		}
+
 	}
 
 ?>

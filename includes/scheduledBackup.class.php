@@ -221,28 +221,16 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			if(!is_numeric($this->id)) {
 				throw new Exception('scheduledBackup->isRunning: '."Error: The ID for this object is not an integer.");
 			}   
-				
-			$dbGetter = new dbConnectionGetter($config);
+			
 
-			$conn = $dbGetter->getConnection($this->log);
-				
-			$sql = "SELECT running_backup_id FROM running_backups WHERE scheduled_backup_id=".$this->id;
-				
-			if( ! ($res = $conn->query($sql) ) ) {
-				throw new Exception('scheduledBackup->isRunning: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
-			}	   
+			$backupGetter = new runningBackupGetter();
+			$backupGetter->setLogStream($this->log);
 
-			if( $res->num_rows == 0 ) {
+			$this->runningBackups = $backupGetter->getByScheduledBackup($this);
+	
+			if( sizeOf($this->runningBackups) == 0 ) {
 				return false;
-			} elseif( $res->num_rows > 0 ) {
-
-				$this->runningBackups = Array();
-				while($row = $res->fetch_array() ) {
-					$this->runningBackups[] = new runningBackup($row['running_backup_id']);
-				}
-
-				$res->free();
-
+			} elseif( sizeOf($this->runningBackups) > 0 ) {
 				return true;
 			}
 
