@@ -1178,7 +1178,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						throw new DBException('queueManager->getTicketNumber: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 					}
 
-
+				} else {
+					break;
 				}
 
 			} // end while
@@ -1253,6 +1254,25 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						throw new DBException('queueManager->cleanQueue: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 					}
 				}				
+			}
+
+			return;
+		}
+
+		// Release this ticket number
+		function releaseTicket($ticketNumber) {
+
+			if(!is_numeric($ticketNumber) ) {
+				throw new Exception('queueManager->releaseTicket: '."Error: Expected a numeric ticket number, but did not get one.");
+			}
+
+			$dbGetter = new dbConnectionGetter();
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "DELETE FROM queue_tickets WHERE queue_ticket_id=".$ticketNumber;
+
+			if( ! $conn->query($sql) ) {
+				throw new DBException('queueManager->releaseTicket: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 
 			return;

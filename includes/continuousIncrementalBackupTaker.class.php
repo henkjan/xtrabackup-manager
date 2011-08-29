@@ -28,6 +28,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$this->log = false;
 			$this->infolog = false;
 			$this->infologVerbose = true;
+			$this->ticketsToReleaseOnStart = Array();
 		}
 
 		// Set the logStream for general / debug xbm output
@@ -48,6 +49,14 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		// Set the time thie backup was launched
 		function setLaunchTime($launchTime) {
 			$this->launchTime = $launchTime;
+		}
+
+		// Set the tickets that should be released once the runningBackup object entry for the job is fully initialized..
+		function setTicketsToReleaseOnStart($ticketArray) {
+			if( !is_array($ticketArray) ) {
+				throw new Exception('continuousIncrementalBackupTaker->setTicketsToReleaseOnStart: '."Error: Expected an array as a paramater, but did not get one.");
+			}
+			$this->ticketsToReleaseOnStart = $ticketArray;
 		}
 
 		function validateParams($params) {
@@ -105,7 +114,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			$backupTaker = new genericBackupTaker();
 			$backupTaker->setInfoLogStream($this->infolog);
-
+			$backupTaker->setTicketsToReleaseOnStart($this->ticketsToReleaseOnStart);
 
 			$sbGroups = $scheduledBackup->getSnapshotGroupsNewestToOldest();
 

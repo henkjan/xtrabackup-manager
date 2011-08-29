@@ -77,9 +77,43 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$msg = 'Using Backup Strategy: '.$sbInfo['strategy_name'];
 			$this->infolog->write($msg, XBM_LOG_INFO);
 
-
-
 			// Check to see if we can even start this party
+
+			// First, take a number in the queues for the scheduledBackup and the host itself..
+
+			$queueManager = new queueManager();
+			$queueManager->setLogStream($this->log);
+
+			// Set the global queueName for use later.
+			$globalQueueName = 'scheduledBackup:GLOBAL';
+
+			// Take a number in the scheduledBackup queue for THIS backup...
+			$schedQueueName = 'scheduledBackup:'.$sbInfo['scheduled_backup_id'];
+			$schedQueueTicket = $queueManager->getTicketNumber($schedQueueName);
+
+			// Take a number in the host queue...
+			$hostQueueName = 'hostBackup:'.$sbInfo['host_id'];
+			$hostQueueTicket = $queueManager->getTicketNumber($hostQueueName);
+
+			// If we are not at the front of the scheduledBackup queue when we start up, then just exit
+			// assume another job is running already for this scheduledBackup.. we dont queue up dupe backup jobs
+			// we skip them
+			if( $queueManager->checkFrontOfQueue($schedQueueName, $schedQueueTicket) == false ) {
+
+				// Release our tickets in the queues, then throw exception...
+				$queueManager->releaseTicket($hostQueueTicket);
+				$queueManager->releaseTicket($schedQueueTicket);
+
+				if($scheduledBackup->isRunning() ) {
+					$this->infolog->write("Detected this scheduled backup job is already running, exiting...", XBM_LOG_ERROR);
+					throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Detected this scheduled backup job is already running.");
+				} else {
+					$this->infolog->write("Encountered an error detecting whether this scheduled backup job is already running,.. exiting to be safe...", XBM_LOG_ERROR);
+					throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Could not accurately determine whether this scheduled backup is already running.");
+				}
+
+			}
+
 
 			// Create this object now, so we don't recreate it a tonne of times in the loop
 			$runningBackupGetter = new runningBackupGetter();
@@ -87,12 +121,14 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$readyToRun = false; 
 			while($readyToRun == false ) {
 
-				// If this one is already running, exit - we NEVER run two at once.
-				if($scheduledBackup->isRunning()) {
-					$this->infolog->write("Detected this scheduled backup job is already running, exiting...", XBM_LOG_ERROR);
-					throw new Exception('rotatingBackupTaker->takeScheduledBackupSnapshot: '."Error: Detected this scheduled backup job is already running.");
+				// If we are not at the front of the queue for this host, then sleep/wait until we are.
+				if( ! $queueManager->checkFrontOfQueue($hostQueueName, $hostQueueTicket) ) {
+					$this->infolog->write("There are jobs before this one in the queue for this host. Sleeping ".XBM_SLEEP_SECS." before checking again...", XBM_LOG_INFO);
+					sleep(XBM_SLEEP_SECS);
+					continue;
 				}
 
+				// We are at the front of the queue for this host...
 				// Check to see how many backups are running for the host already...
 				$runningBackups = $sbHost->getRunningBackups();
 
@@ -106,6 +142,18 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					continue;
 				}
 
+				// Only take a ticket in the global queue if we dont already have one
+				// Wait until this point to prevent blocking up the GLOBAL queue when the host itself is blocked..
+				if(!isSet($globalQueueTicket)) {
+					$globalQueueTicket = $queueManager->getTicketNumber($globalQueueName);
+				}
+
+				// If we are not at the front of the queue for global backups, then sleep/wait until we are
+				if( ! $queueManager->checkFrontOfQueue($globalQueueName, $globalQueueTicket) ) {
+					$this->infolog->write("There are jobs before this one in the global backup queue. Sleeping ".XBM_SLEEP_SECS." before checking again...", XBM_LOG_INFO);
+					sleep(XBM_SLEEP_SECS);
+					continue;
+				}
 
 				// Now check to see the how many backups are running globally and if we should be allowed to run...
 				$globalRunningBackups = $runningBackupGetter->getAll();
@@ -123,18 +171,27 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				$readyToRun = true;
 			}
 
-
-
-
-	
 			// Populate the backupTaker with the relevant settings like log/infolog/Verbose, etc.
 			$backupTaker->setLogStream($this->log);
 			$backupTaker->setInfoLogStream($this->infolog);
 			$backupTaker->setInfoLogVerbose($this->infologVerbose);
 			$backupTaker->setLaunchTime($this->launchTime);
+			$backupTaker->setTicketsToReleaseOnStart(Array($hostQueueTicket, $globalQueueTicket));
 
 			// Kick off takeScheduledBackupSnapshot method of the actual backup taker
 			$backupTaker->takeScheduledBackupSnapshot($scheduledBackup);
+
+			// Release the ticket for running the backup..
+			$queueManager->releaseTicket($schedQueueTicket);
+
+			$retentionQueueName = 'retentionApply:'.$sbInfo['scheduled_backup_id'];
+			$retentionQueueTicket = $queueManager->getTicketNumber($retentionQueueName);
+
+			// Proceed once we're at the start of the retention policy queue for this scheduled backup
+			while(!$queueManager->checkFrontOfQueue($retentionQueueName, $retentionQueueTicket) ) {
+				$this->infolog->write('There is already a task applying retention policy for this scheduled backup. Sleeping '.XBM_SLEEP_SECS.' before retry...', XBM_LOG_INFO);
+				sleep(XBM_SLEEP_SECS);
+			}
 
 			// Apply the retention policy
 			$this->infolog->write("Applying snapshot retention policy ...", XBM_LOG_INFO);
@@ -145,15 +202,26 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 			$this->infolog->write("Application of retention policy complete.", XBM_LOG_INFO);
 
-			// Perform any post processing
+			$queueManager->releaseTicket($retentionQueueTicket);
+
+			// Perform any post processingA
+
+			// Get ticket/queue
+			$postProcessQueueName = 'postProcess:'.$sbInfo['scheduled_backup_id'];
+			$postProcessQueueTicket = $queueManager->getTicketNumber($postProcessQueueName, $postProcessQueueTicket);
+			while(!$queueManager->checkFrontOfQueue($postProcessQueueName, $postProcessQueueTicket) ) {
+				$this->infolog->write('There is already a task performing post processing for this scheduled backup. Sleeping '.XBM_SLEEP_SECS.' before retry...', XBM_LOG_INFO);
+				sleep(XBM_SLEEP_SECS);
+			}
+
 			$this->infolog->write("Performing any post-processing necessary ...", XBM_LOG_INFO);
 			try {
 				$backupTaker->postProcess($scheduledBackup);
 			} catch ( Exception $e ) {
 				$this->infolog->write($e->getMessage());
 			}
-			$this->infolog->write("Application of retention policy complete.", XBM_LOG_INFO);
 			$this->infolog->write("Post-processing completed.", XBM_LOG_INFO);
+			$queueManager->releaseTicket($postProcessQueueTicket);
 
 			$this->infolog->write("Scheduled Backup Task Complete!", XBM_LOG_INFO);
 

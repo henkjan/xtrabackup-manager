@@ -28,6 +28,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$this->log = false;
 			$this->infolog = false;
 			$this->infologVerbose = true;
+			$this->ticketsToReleaseOnStart = Array();
 		}
 
 		// Set the logStream for general / debug xbm output
@@ -45,6 +46,13 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$this->infologVerbose = $bool;
 		}
 
+		// Set the tickets that should be released once the runningBackup object entry for the job is fully initialized..
+		function setTicketsToReleaseOnStart($ticketArray) {
+			if( !is_array($ticketArray) ) {
+				throw new Exception('genericBackupTaker->setTicketsToReleaseOnStart: '."Error: Expected an array as a paramater, but did not get one.");
+			}
+			$this->ticketsToReleaseOnStart = $ticketArray;
+		}
 
 		// Take a full backup snapshot into the snapshotGroup given
 		function takeFullBackupSnapshot($scheduledBackup, $snapshotGroup) {
@@ -75,6 +83,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			// Initialize a backup for sbHost for scheduledBackup
 			$runningBackup->init($sbHost, $scheduledBackup);
 
+			// Release our queue tickets
+			$queueManager = new queueManager();
+			$queueManager->setLogStream($this->log);
+			foreach($this->ticketsToReleaseOnStart as $ticket) {
+				$queueManager->releaseTicket($ticket);
+			}
 
 			try {
 
@@ -341,6 +355,13 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			// Initialize a backup for sbHost for scheduledBackup
 			$runningBackup->init($sbHost, $scheduledBackup);
+
+			// Release our queue tickets
+			$queueManager = new queueManager();
+			$queueManager->setLogStream($this->log);
+			foreach($this->ticketsToReleaseOnStart as $ticket) {
+				$queueManager->releaseTicket($ticket);
+			}
 
 			try {
 
