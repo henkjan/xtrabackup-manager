@@ -218,7 +218,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			try {
 				$backupTaker->postProcess($scheduledBackup);
 			} catch ( Exception $e ) {
-				$this->infolog->write($e->getMessage());
+				$this->infolog->write($e->getMessage(), XBM_LOG_ERROR);
+				throw new Exception($e->getMessage());
 			}
 			$this->infolog->write("Post-processing completed.", XBM_LOG_INFO);
 			$queueManager->releaseTicket($postProcessQueueTicket);
