@@ -62,6 +62,71 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		}
 
+		// Create a new host object and return it 
+		function getNew($hostname, $hostDesc) {
+
+			// Validate inputs
+			host::validateHostname($hostname);
+			host::validateHostDescription($hostDesc);
+
+			if( $existing = $this->getByName($hostname) ) {
+				throw new ProcessingException("Error: A Host already exists with a hostname matching: $hostname");
+			}
+
+			// INSERT the row
+			$dbGetter = new dbConnectionGetter();
+
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "INSERT INTO hosts (hostname, description) VALUES ('".$conn->real_escape_string($hostname)."', "
+				."'".$conn->real_escape_string($hostDesc)."')";
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new DBException('hostGetter->getNew: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			$host = new host($conn->insert_id);
+			$host->setLogStream($this->log);
+
+			return $host;
+	
+
+		}
+
+
+		// Get host by Name
+		function getByName($name) {
+
+			global $config;
+
+			host::validateHostname($name);
+
+			$dbGetter = new dbConnectionGetter();
+
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "SELECT host_id FROM hosts WHERE hostname='".$conn->real_escape_string($name)."'";
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new DBException('hostGetter->getByName: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			if($res->num_rows != 1 ) {
+				return false;
+			}
+
+			if( ! ( $row = $res->fetch_array() ) ) {
+				throw new Exception('hostGetter->getByName: '."Error: Could not retrieve the ID for Host with Hostname: $name.");
+			}
+
+			$host = new host($row['host_id']);
+			$host->setLogStream($this->log);
+
+			return $host;
+
+		}
+
+
 		// Get host by ID
 		function getById($id) {
 
@@ -171,9 +236,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			global $config;
 
-			if( ! ( strlen($name) > 0 ) ) {
-				throw new Exception('volumeGetter->getByName: '."Error: Expected a name with length > 0 as a parameter, but did not get one.");
-			}
+			backupVolume::validateName($name);
 
 			$dbGetter = new dbConnectionGetter();
 

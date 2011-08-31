@@ -83,6 +83,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				// Call host context handler
 				case 'hosts':
 				case 'host':
+					$this->handleHostActions($args);
 				break;
 
 				// Call backup context handler
@@ -114,22 +115,158 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		// Print out the help text for volumes context
 		function printVolumeHelpText($args) {
 
-				echo("Usage: xbm ".$args[1]." <action> <args> ...\n\n");
-				echo("Actions may be one of the following:\n\n");
+			echo("Usage: xbm ".$args[1]." <action> <args> ...\n\n");
+			echo("Actions may be one of the following:\n\n");
 
-				echo("add <name> <path>\t\t\t -- Add a New Backup Volume\n");
-				echo("list\t\t\t\t\t -- List available Backup Volumes\n");
-				echo("edit <name> <parameter> <value>\t\t -- Edit a Backup Volume to set <parameter> to <value>\n");
-				echo("delete <name>\t\t\t\t -- Delete a Backup Volume\n");
+			echo("  add <name> <path>\t\t\t -- Add a New Backup Volume\n");
+			echo("  list\t\t\t\t\t -- List available Backup Volumes\n");
+			echo("  edit <name> <parameter> <value>\t\t -- Edit a Backup Volume to set <parameter> to <value>\n");
+			echo("  delete <name>\t\t\t\t -- Delete a Backup Volume\n");
 
-				echo("\n");
-				echo("You may specify an action without parameters to get help on its relevant arguments.\n");
-				echo("\n");
+			echo("\n");
+			echo("You may specify an action without parameters to get help on its relevant arguments.\n");
+			echo("\n");
 
-				return;
+			return;
 
 		}
 
+
+		// Print out the help text for hosts context
+		function printHostHelpText($args) {
+
+			echo("Usage: xbm ".$args[1]." <actions> <args> ...\n\n");
+			echo("Actions may be one of the following:\n\n");
+
+			echo("  add <hostname> <description>\t\t -- Add a new Host\n");
+			echo("  list\t\t\t\t\t -- List available Hosts\n");
+			echo("  edit <hostname> <parameter> <value>\t -- Edit a Host to set <parameter> to <value>\n");
+			echo("  delete <hostname>\t\t\t -- Delete a Host\n");
+	
+			echo("\n");
+			echo("You may specify an action without parameters to get help on its relevant arguments.\n");
+			echo("\n");
+
+			return;
+		}
+
+		// Handle actions relating to hosts context
+		// Accepts an argv array from the command line
+		function handleHostActions($args) {
+
+			// If we arent given any more parameters
+			if(!isSet($args[2]) ) {
+
+				// Just output some helpful information and exit
+				echo("Error: Action missing.\n\n");
+				$this->printHostHelpText($args);
+				return;
+
+			}
+
+			// Handle actions
+			switch($args[2]) {
+
+				// Handle add
+				case 'add':
+
+					// Check for parameters first
+					if(!isSet($args[3]) || !isSet($args[4]) ) {
+						throw new InputException("Error: The Hostname and Description of the Host to add are required.\n\n  Example:\n\n	xbm ".$args[1].' add "db01.mydomain.com" "Production DB #1"');
+					}
+
+					$hostname = $args[3];
+					$hostDesc = $args[4];
+
+					$hostGetter = new hostGetter();
+					$hostGetter->setLogStream($this->log);
+
+					// Get the new Volume
+					$host = $hostGetter->getNew($hostname, $hostDesc);
+
+					echo("Action: New host created with hostname/description: ".$hostname." -- ".$hostDesc."\n\n");
+
+					
+				break;
+
+
+				// Handle list
+				case 'list':
+
+					$hostGetter = new hostGetter();
+					$hostGetter->setLogStream($this->log);
+
+					$hosts = $hostGetter->getAll();
+
+					echo("-- Listing all Hosts --\n\n");
+
+					foreach($hosts as $host) {
+						$hostInfo = $host->getInfo();
+						echo("Hostname: ".$hostInfo['hostname']."  Description: ".$hostInfo['description']."\n");
+						echo("Active: ".$hostInfo['active']."  Staging_path: ".$hostInfo['staging_path']."\n\n");
+					}
+
+					echo("\n");
+				break;
+
+				// Handle edit
+				case 'edit':
+
+					if( !isSet($args[3]) || !isSet($args[4]) || !isSet($args[5]) ) {
+						$errMsg = "Error: Hostname of the host to edit must be given along with parameter and value.\n\n";
+						$errMsg .= "  Parameters:\n\n";
+						$errMsg .= "	hostname - The hostname of the Host - May only be edited if no Scheduled Backups are configured for the host.\n";
+						$errMsg .= "	description - The description of the Host - Can be edited at any time.\n";
+						$errMsg .= "	staging_path - The temporary dir to use on the host for staging incremental backups - Can be edited at any time.\n";
+						$errMsg .= "	active - Whether or the Host is active Y or N - Can be edited at any time.\n\n";
+						$errMsg .= "  Example:\n\n	xbm ".$args[1].' edit db01.mydomain.com staging_path /storage1/backuptmp';
+
+						throw new InputException($errMsg);
+
+					}
+
+					$hostname = $args[3];
+					$hostParam = $args[4];
+					$hostValue = $args[5];
+
+					$hostGetter = new hostGetter();
+					$hostGetter->setLogStream($this->log);
+					if( ! ($host = $hostGetter->getByName($hostname) ) ) {
+						throw new ProcessingException("Error: No Host exists with name: ".$hostname);
+					}
+
+					$host->setParam($hostParam, $hostValue);
+
+					echo("Action: Host with hostname: ".$hostname." parameter '".$hostParam."' set to: ".$hostValue."\n\n");
+
+				break;
+
+				// Handle delete
+				case 'delete':
+
+					if( !isSet($args[3]) ) {
+						throw new InputException("Error: Hostname of Host to delete must be given.");
+					}
+
+					$hostname = $args[3];
+
+					$hostGetter = new hostGetter();
+					$hostGetter->setLogStream($this->log);
+
+					if( ! ($host = $hostGetter->getByName($hostname) ) ) {
+						throw new ProcessingException("Error: No Host exists with hostname: ".$hostname);
+					}
+
+					$host->delete();
+
+					echo("Action: Host with hostname: ".$hostname." deleted.\n\n");
+
+				break;
+ 
+				
+			}
+
+		}
 
 		// Handle actions relating to volumes
 		// Accepts an argv array from the command line
@@ -157,7 +294,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					// Are they set..
 					if(!isSet($args[3]) || !isSet($args[4]) ) {
 						// Input exception
-						throw new InputException("Error: Name and Path of Backup Volume to add must be given.\n\n  Example:\n\n    xbm ".$args[1].' add "Storage Array 1" /backup');
+						throw new InputException("Error: Name and Path of Backup Volume to add must be given.\n\n  Example:\n\n	xbm ".$args[1].' add "Storage Array 1" /backup');
 					}
 
 					$volumeName = $args[3];
@@ -200,9 +337,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					if( !isSet($args[3]) || !isSet($args[4]) || !isSet($args[5]) ) {
 						$errMsg = "Error: Name of Backup Volume to edit must be given along with parameter and value.\n\n";
 						$errMsg .= "  Parameters:\n\n";
-						$errMsg .= "    name - The name of the Backup Volume - Can be edited at any time.\n";
-						$errMsg .= "    path - The path of the Backup Volume - May only be edited if no Scheduled Backups are configured for the volume.\n\n";
-						$errMsg .= "  Example:\n\n    xbm ".$args[1].' edit "Storage Array 1" path /storage1';
+						$errMsg .= "	name - The name of the Backup Volume - Can be edited at any time.\n";
+						$errMsg .= "	path - The path of the Backup Volume - May only be edited if no Scheduled Backups are configured for the volume.\n\n";
+						$errMsg .= "  Example:\n\n	xbm ".$args[1].' edit "Storage Array 1" path /storage1';
 
 						throw new InputException($errMsg);
 
