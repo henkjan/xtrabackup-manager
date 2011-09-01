@@ -1064,6 +1064,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		// Merge the deltas from deltaPath into seedPath using xbBinary xtrabackup binary
 		function mergePaths($seedPath, $deltaPath, $xbBinary='') {
 
+			global $config;
+
 			if(strlen($xbBinary) == 0 ) {
 				throw new Exception('backupSnapshotMerger->mergePaths: '."Error: Expected an xtrabackup binary passed as a parameter, but string was empty.");
 			}
