@@ -115,12 +115,13 @@ SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
 CREATE TABLE `hosts` (
   `host_id` int(10) unsigned NOT NULL auto_increment,
-  `hostname` varchar(256) NOT NULL default '',
-  `description` varchar(256) NOT NULL default '',
+  `hostname` varchar(255) default NULL,
+  `description` varchar(256) character set utf8 NOT NULL default '',
   `active` enum('Y','N') default 'Y',
-  `staging_path` varchar(1024) NOT NULL default '/tmp',
-  PRIMARY KEY  (`host_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  `staging_path` varchar(1024) character set utf8 NOT NULL default '/tmp',
+  PRIMARY KEY  (`host_id`),
+  UNIQUE KEY `i_hostname` (`hostname`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -193,11 +194,11 @@ SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
 CREATE TABLE `scheduled_backups` (
   `scheduled_backup_id` int(10) unsigned NOT NULL auto_increment,
-  `name` varchar(256) NOT NULL default '',
+  `name` varchar(128) NOT NULL,
   `cron_expression` varchar(128) default NULL,
-  `backup_user` varchar(128) NOT NULL default 'xbm',
+  `backup_user` varchar(256) NOT NULL default 'xbm',
   `datadir_path` varchar(1024) NOT NULL default '',
-  `mysql_user` varchar(128) NOT NULL default '',
+  `mysql_user` char(16) NOT NULL,
   `mysql_password` varchar(256) NOT NULL default '',
   `lock_tables` enum('Y','N') default 'Y',
   `host_id` int(10) unsigned NOT NULL,
@@ -206,6 +207,7 @@ CREATE TABLE `scheduled_backups` (
   `mysql_type_id` int(10) unsigned default NULL,
   `backup_strategy_id` int(10) unsigned NOT NULL default '1',
   PRIMARY KEY  (`scheduled_backup_id`),
+  UNIQUE KEY `i_host_name` (`name`,`host_id`),
   KEY `i_host` (`host_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;

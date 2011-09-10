@@ -66,7 +66,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	require('materializedSnapshotManager.class.php');
 	require('cliHandler.class.php');
 	require('exception.classes.php');
+	require('backupStrategy.class.php');
 
 	// Setup global defines that depend on other stuff
 	define('XBM_MAIN_LOG', $config['LOGS']['logdir'].'/xbm.log');
+
+	// Define list of valid backup strategy codes
+	define('XBM_VALID_STRATEGY_CODES', "CONTINC,FULLONLY,ROTATING");
+
 ?>

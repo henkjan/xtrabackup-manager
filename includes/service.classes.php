@@ -366,7 +366,147 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			return $scheduledBackup;
 
 		}
-	}
+
+
+		// Get a scheduledBackup by name
+		function getByHostnameAndName($hostname, $name) {
+
+			host::validateHostname($hostname);
+			scheduledBackup::validateName($name);
+
+			$hostGetter = new hostGetter();
+			$hostGetter->setLogStream($this->log);
+
+			$host = $hostGetter->getByName($hostname);
+
+			$dbGetter = new dbConnectionGetter();
+
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "SELECT scheduled_backup_id FROM scheduled_backups 
+					WHERE host_id=".$host->id." AND name='".$conn->real_escape_string($name)."'";
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new DBException('scheduledBackupGetter->getByHostnameAndName: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			if($res->num_rows == 0) {
+				return false;
+			}
+
+			// Cross check we didnt get dupes
+			if($res->num_rows > 1) {
+				throw new Exception('scheduledBackupGetter->getByHostnameAndName: '."Error: Found more than one Scheduled Backup for host $hostname with name: $name");
+			}
+
+			if( ! ( $row = $res->fetch_array() ) ) {
+				throw new Exception('scheduledBackupGetter->getByHostnameAndName: '."Error: Could not retrieve a Scheduled Backup for host $hostname with name: $name");
+			}
+
+			$scheduledBackup = new scheduledBackup($row['scheduled_backup_id']);
+			$scheduledBackup->setLogStream($this->log);
+
+			return $scheduledBackup;
+			
+		}
+
+		// Get a new scheduledBackup object
+		function getNew($hostname, $name, $strategyCode, $cronExpression, $volumeName, $datadir, $mysqlUser, $mysqlPass) {
+
+			$datadir = rtrim($datadir, '/');
+
+			// Validate inputs
+			host::validateHostname($hostname);
+			scheduledBackup::validateName($name);
+			backupStrategy::validateStrategyCode($strategyCode);
+			scheduledBackup::validateCronExpression($cronExpression);
+			backupVolume::validateName($volumeName);
+			scheduledBackup::validateDatadirPath($datadir);
+			scheduledBackup::validateMysqlUser($mysqlUser);
+			scheduledBackup::validateMysqlPass($mysqlPass);
+
+
+			// Lookup host by name
+			$hostGetter = new hostGetter();
+			$hostGetter->setLogStream($this->log);
+
+			if( ! ( $host = $hostGetter->getByName($hostname) ) ) {
+				throw new ProcessingException("Error: No Host could be found with a hostname matching: $hostname");
+			}
+			
+			// Lookup volume by name
+			$volumeGetter = new volumeGetter();
+			$volumeGetter->setLogStream($this->log);
+
+			if( ! ( $volume = $volumeGetter->getByName($volumeName) ) ) {
+				throw new ProcessingException("Error: No Volume could be found with a name matching: $volumeName");
+			}
+
+			// Lookup backup strategy by code
+			$strategyGetter = new backupStrategyGetter();
+			$strategyGetter->setLogStream($this->log);
+
+			if( ! ( $strategy = $strategyGetter->getByCode($strategyCode) ) ) {
+				throw new ProcessingException("Error: No Backup Strategy could be found matching the code: $strategyCode");
+			}
+
+
+			// Check for existing scheduled backups with the same name for this host
+			if( $existing = $this->getByHostnameAndName($hostname, $name) ) {
+				throw new ProcessingException("Error: A Scheduled Backup already exists for host $hostname with a name matching: $name");
+			}
+
+
+			// INSERT the row
+			$dbGetter = new dbConnectionGetter();
+
+			$conn = $dbGetter->getConnection($this->log);
+
+
+			// Create a new scheduledBackup entry
+			// For now we just always create with "xtrabackup" binary used (mysql_type_id = 1)..
+			// Maybe this can change later..
+			$sql = "INSERT INTO scheduled_backups 
+					( name, cron_expression, datadir_path, mysql_user, mysql_password, 
+					  host_id, backup_volume_id, mysql_type_id, backup_strategy_id 
+					) VALUES ( 
+						'".$conn->real_escape_string($name)."',
+						'".$conn->real_escape_string($cronExpression)."',
+						'".$conn->real_escape_string($datadir)."',
+						'".$conn->real_escape_string($mysqlUser)."',
+						'".$conn->real_escape_string($mysqlPass)."',
+						".$host->id.",
+						".$volume->id.",
+						1,
+						".$strategy->id."
+					)";
+
+
+			if( ! ($conn->query($sql) ) ) {
+				throw new DBException('scheduledBackupGetter->getNew: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			// Init the object
+			$scheduledBackup = new scheduledBackup($conn->insert_id);
+			$scheduledBackup->setLogStream($this->log);
+
+			// Init the default scheduledBackup parameters for the strategy
+			$sql = "INSERT INTO scheduled_backup_params (scheduled_backup_id, backup_strategy_param_id, param_value) 
+						SELECT ".$scheduledBackup->id.", backup_strategy_param_id, default_value 
+						FROM backup_strategy_params
+						WHERE backup_strategy_id=".$strategy->id;
+
+			if( ! ( $conn->query($sql) ) ) {
+				throw new DBException('scheduledBackupGetter->getNew: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+
+			return $scheduledBackup;
+			
+		}
+
+
+	} // class: scheduledBackupGetter
 
 
 	class mysqlTypeGetter {
@@ -1175,7 +1315,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		
 				case false:
 				default:
-					throw new Exception('backupTakerFactory->getBackupTaker: '."Error: A type must be specified.");
+					throw new Exception('backupTakerFactory->getBackupTaker: '."Error: A backup strategy code must be specified.");
 
 			}
 
@@ -1345,4 +1485,49 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 	}
 
+
+
+	// A service class to get backupStrategy objects
+	class backupStrategyGetter {
+
+		// Set the log stream for this object to use
+		function setLogStream($log) {
+			$this->log = $log;
+
+		}
+
+		// Fetch a backupStrategy by code
+		function getByCode($code) {
+
+			global $config;
+
+			backupStrategy::validateStrategyCode($code);
+
+			$dbGetter = new dbConnectionGetter();
+
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "SELECT backup_strategy_id FROM backup_strategies WHERE strategy_code='".$conn->real_escape_string($code)."'";
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new DBException('backupStrategyGetter->getByCode: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			if($res->num_rows != 1 ) {
+				return false;
+			}
+
+			if( ! ( $row = $res->fetch_array() ) ) {
+				throw new Exception('backupStrategyGetter->getByCode: '."Error: Could not retrieve the ID for Backup Strategy with code: $code");
+			}
+
+			$strategy = new backupStrategy($row['backup_strategy_id']);
+			$strategy->setLogStream($this->log);
+
+			return $strategy;
+
+		}
+
+		
+	}
 ?>

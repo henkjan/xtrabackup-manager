@@ -24,7 +24,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	// Class to handle the "xbm" generic command functionality
 	class cliHandler {
 
-
+		// Set the logStream to write to
 		function setLogStream($log) {
 			$this->log = $log;
 		}
@@ -39,7 +39,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			echo("host [add|list|edit|delete] <args>\t\t -- Manage Hosts to Backup\n");
 
-			echo("backup [add|list|edit|delete] <args>\t\t -- Manage Scheduled Backup Tasks\n");
+			echo("backup [add|list|edit|info|delete|run] <args>\t -- Manage Scheduled Backup Tasks\n");
 
 			echo("snapshot [list|delete]\t\t\t\t -- Manage Backup Snapshots\n");
 
@@ -89,6 +89,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				// Call backup context handler
 				case 'backup':
 				case 'backups':
+					$this->handleBackupActions($args);
 				break;
 
 				// Call snapshot context handler
@@ -120,7 +121,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			echo("  add <name> <path>\t\t\t -- Add a New Backup Volume\n");
 			echo("  list\t\t\t\t\t -- List available Backup Volumes\n");
-			echo("  edit <name> <parameter> <value>\t\t -- Edit a Backup Volume to set <parameter> to <value>\n");
+			echo("  edit <name> <parameter> <value>\t -- Edit a Backup Volume to set <parameter> to <value>\n");
 			echo("  delete <name>\t\t\t\t -- Delete a Backup Volume\n");
 
 			echo("\n");
@@ -146,6 +147,140 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			echo("\n");
 			echo("You may specify an action without parameters to get help on its relevant arguments.\n");
 			echo("\n");
+
+			return;
+		}
+
+		// Print out the help text for hosts context
+		function printBackupHelpText($args) {
+
+			echo("Usage: xbm ".$args[1]." <actions> <args> ...\n\n");
+			echo("Actions may be one of the following:\n\n");
+
+
+			echo("  add <hostname> <backup_name> <strategy_code> <cron_expression> <backup_volume> <datadir_path> <mysql_user> <mysql_password>\n");
+			echo("   ^---------------------------------------------------- -- Add a new Scheduled Backup\n\n");
+			echo("  list [<hostname>]\t\t\t\t\t -- List Scheduled Backups, optionally filtered by <hostname>\n");
+			echo("  edit <hostname> <backup_name> <parameter> <value>\t -- Edit a Scheduled Backup to set <parameter> to <value>\n");
+			echo("  delete <hostname> <backup_name>\t\t\t -- Delete a Scheduled Backup with <backup_name> from <hostname>\n");
+			echo("  run <hostname> <backup_name>\t\t\t\t -- Run the backup <backup_name> for <hostname>\n");
+			echo("  info <hostname> <backup_name>\t\t\t\t -- Print complete information about <backup_name> for <hostname>\n");
+
+			echo("\n");
+			echo("You may specify an action without parameters to get help on its relevant arguments.\n");
+			echo("\n");
+
+			return;
+		}
+
+
+		function handleBackupActions($args) {
+
+			//If we arent given any more parameters
+			if(!isSet($args[2]) ) {
+				// Just output some helpful info and exit
+				echo("Error: Action missing.\n\n");
+				$this->printBackupHelpText($args);
+				return;
+			}
+
+			switch($args[2]) {
+
+				// Handle add
+				case 'add':
+					// Cycle through args 3-10 checking if they are set
+					// Easier than one big ugly if with many ORs
+					for( $i=3; $i <= 10; $i++ ) {
+						if( !isSet($args[$i]) ) {
+							throw new InputException("Error: Not all required parameters for the Scheduled Backup to add were given.\n\n"
+									."  Syntax:\n\n	xbm ".$args[1]." add <hostname> <backup_name> <strategy_code> <cron_expression> <backup_volume> <datadir_path> <mysql_user> <mysql_password>\n\n"
+									."  Example:\n\n	xbm ".$args[1].' add "db01.mydomain.com" "nightlyBackup" ROTATING "30 20 * * *" "Storage Array 1" /usr/local/mysql/data backup "p4ssw0rd"'."\n\n");
+						}
+					}
+					
+					// Populate vars with our args
+					$hostname = $args[3];
+					$backupName = $args[4];
+					$strategyCode = $args[5];
+					$cronExpression = $args[6];
+					$volumeName = $args[7];
+					$datadirPath = $args[8];
+					$mysqlUser = $args[9];
+					$mysqlPass = $args[10];
+
+					$backupGetter = new scheduledBackupGetter();
+					$backupGetter->setLogStream($this->log);
+
+
+					// Get the new Scheduled Backup
+					$scheduledBackup = $backupGetter->getNew($hostname, $backupName, $strategyCode, $cronExpression, $volumeName, $datadirPath, $mysqlUser, $mysqlPass);
+
+					echo("Action: New Scheduled Backup '$backupName' was created for host: ".$hostname."\n\n");
+
+
+				break;
+
+				// Handle list
+				case 'list':
+
+					// Optionally accept a hostname parameter to filter by
+					if(isSet($args[3]) ) {
+
+						$hostname = $args[3];
+
+						$hostGetter = new hostGetter();
+						$hostGetter->setLogStream($this->log);
+
+						if( ! ( $host = $hostGetter->getByName($hostname) ) ) {
+							throw new ProcessingException("Error: Could not find a host with hostname: $hostname");
+						}
+
+						$scheduledBackups = $host->getScheduledBackups();
+
+						
+						echo("-- Listing Scheduled Backups for $hostname --\n\n");
+						foreach($scheduledBackups as $scheduledBackup) {
+							$sbInfo = $scheduledBackup->getInfo();
+							echo("  Name: ".$sbInfo['name']."\n");
+						}
+						echo("\n");
+
+					} else {
+
+
+						$backupGetter = new scheduledBackupGetter();
+						$backupGetter->setLogStream($this->log);
+
+						$scheduledBackups = $backupGetter->getAll();
+
+						echo("-- Listing all Scheduled Backups --\n\n");
+
+						
+					}
+
+
+
+				break;
+
+				// Handle edit
+				case 'edit':
+				break;
+
+				// Handle delete
+				case 'delete':
+				break;
+
+				// Handle run
+				case 'run':
+				break;
+
+				// Catch unknown action
+				default:
+					echo("Error: Unrecognized action for ".$args[1]." context: ".$args[2]."\n\n");
+					$this->printBackupHelpText($args);
+				break;
+
+			}
 
 			return;
 		}
@@ -263,8 +398,17 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				break;
  
+				// Handle unknown action
+				default:
+
+					echo("Error: Unrecognized action for ".$args[1]." context: ".$args[2]."\n\n");
+					$this->printHostHelpText($args);
+
+				break;
 				
 			}
+
+			return;
 
 		}
 

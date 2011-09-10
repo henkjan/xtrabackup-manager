@@ -271,36 +271,36 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 
-        // Get the most recently completed materialized snapshot
-        function getMostRecentCompletedMaterializedSnapshot() {
+		// Get the most recently completed materialized snapshot
+		function getMostRecentCompletedMaterializedSnapshot() {
 
-            global $config;
+			global $config;
 
-            if(!is_numeric($this->id)) {
-                throw new Exception('scheduledBackup->getMostRecentCompletedMaterializedSnapshot: '."Error: The ID for this object is not an integer.");
-            }
+			if(!is_numeric($this->id)) {
+				throw new Exception('scheduledBackup->getMostRecentCompletedMaterializedSnapshot: '."Error: The ID for this object is not an integer.");
+			}
 
-            $dbGetter = new dbConnectionGetter($config);
+			$dbGetter = new dbConnectionGetter($config);
 
-            $conn = $dbGetter->getConnection($this->log);
+			$conn = $dbGetter->getConnection($this->log);
 
-            $sql = "SELECT materialized_snapshot_id FROM materialized_snapshots WHERE status='COMPLETED' AND scheduled_backup_id=".$this->id." ORDER BY creation_time DESC LIMIT 1";
+			$sql = "SELECT materialized_snapshot_id FROM materialized_snapshots WHERE status='COMPLETED' AND scheduled_backup_id=".$this->id." ORDER BY creation_time DESC LIMIT 1";
 
-            if( ! ($res = $conn->query($sql) ) ) {
-                throw new Exception('scheduledBackup->getMostRecentCompletedMaterializedSnapshot: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
-            }
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new Exception('scheduledBackup->getMostRecentCompletedMaterializedSnapshot: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
 
-            if( $res->num_rows < 1 ) {
+			if( $res->num_rows < 1 ) {
 				return false;
-            }
+			}
 
-            $row = $res->fetch_array();
+			$row = $res->fetch_array();
 
-            $snapshotGetter = new materializedSnapshotGetter();
-            $snapshot = $snapshotGetter->getById($row['materialized_snapshot_id']);
+			$snapshotGetter = new materializedSnapshotGetter();
+			$snapshot = $snapshotGetter->getById($row['materialized_snapshot_id']);
 
-            return $snapshot;
-        }
+			return $snapshot;
+		}
 
 
 		// Get an array list of the scheduledBackup parameters
@@ -340,6 +340,122 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		}
 
+		// Validate a scheduledBackup name
+		public static function validateName($name) {
+
+			if(!isSet($name) ) {
+				throw new InputException("Error: Expected a Scheduled Backup name as input, but did not get one.");
+			}
+
+			if(strlen($name) < 1 || strlen($name) > 128 ) {
+				throw new InputException("Error: Scheduled Backup name must be between 1 and 128 characters in length.");
+			}
+
+			return;
+		}
+
+		// Validate a cronExpression
+		public static function validateCronExpression($cron) {
+
+			// Check that we got a value
+			if(!isSet($cron) ) {
+				throw new InputException("Error: Expected a cron expression as a parameter, but did not get one.");
+			}
+
+			// Build the cron validator regexp
+			// Adapted from code by Jordi Salvat i Alabart - with thanks to www.salir.com
+
+			$numbers= array(
+				'min'=>'[0-5]?\d',
+				'hour'=>'[01]?\d|2[0-3]',
+				'day'=>'0?[1-9]|[12]\d|3[01]',
+				'month'=>'[1-9]|1[012]',
+				'dow'=>'[0-7]'
+			);
+
+			foreach($numbers as $field=>$number) {
+				$range= "($number)(-($number)(\/\d+)?)?";
+				$field_re[$field]= "\*(\/\d+)?|$range(,$range)*";
+			}
+
+			$field_re['month'].='|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec';
+			$field_re['dow'].='|mon|tue|wed|thu|fri|sat|sun';
+
+			$fields_re= '('.join(')\s+(', $field_re).')';
+
+			$replacements= '@reboot|@yearly|@annually|@monthly|@weekly|@daily|@midnight|@hourly';
+
+			$regExp = '^('.
+					"$fields_re".
+					"|($replacements)".
+				')$';
+
+			// Validate the cron
+			if(preg_match("/$regExp/", $cron) != 1) {
+				throw new InputException("Error: The cron expression given is invalid.");
+			}
+
+			return;
+
+		}
+
+		// Validate a datadir path
+		public static function validateDatadirPath($path) {
+
+			if(!isSet($path) ) {
+				throw new InputException("Error: Expected a datadir as a parameter, but did not get one.");
+			}
+
+			if(strlen($path) < 1 || strlen($path) > 1024 ) {
+				throw new InputException("Error: Datadir must be between 1 and 1024 characters in length.");
+			}
+
+			return;
+
+		}
+
+		// Validate a mysql user
+		public static function validateMysqlUser($user) {
+
+			if(!isSet($user) ) {
+				throw new InputException("Error: Expected a MySQL user as a parameter, but did not get one.");
+			}
+
+			if(strlen($user) < 1 || strlen($user) > 16) {
+				throw new InputException("Error: MySQL user name must be between 1 and 16 characters in length.");
+			}
+
+			return;
+		}
+
+		// Validate a mysql password
+		public static function validateMysqlPass($pass) {
+
+			if(!isSet($pass)) {
+				throw new InputException("Error: Expected a MySQL password as a parameter, but did not get one.");
+			}
+
+			if(strlen($pass) < 1 || strlen($pass) > 256 ) {
+				throw new InputException("Error: MySQL password must be between 1 and 256 characters in length.");
+			}
+
+			return;
+		}
+
+		// Validate a backup user
+		public static function validateBackupUser($user) {
+
+            if(!isSet($user)) {
+                throw new InputException("Error: Expected a Backup User as a parameter, but did not get one.");
+            }
+
+            if(strlen($user) < 1 || strlen($user) > 256 ) {
+                throw new InputException("Error: Backup User must be between 1 and 256 characters in length.");
+            }
+
+            return;
+
+		}
 
 	} // Class: scheduledBackup
 
