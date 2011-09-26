@@ -348,7 +348,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			$conn = $dbGetter->getConnection($this->log);
 
-			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE parent_snapshot_id=".$this->id;
+			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE status='COMPLETED' AND parent_snapshot_id=".$this->id;
 
 
 			if( ! ($res = $conn->query($sql) ) ) {
