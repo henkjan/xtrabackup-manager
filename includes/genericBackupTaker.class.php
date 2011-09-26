@@ -147,7 +147,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			
 					// Build the command...
 					$xbCommand = 'ssh '.$sbInfo['backup_user'].'@'.$hostInfo['hostname']." 'innobackupex-1.5.1 --ibbackup=".$xbBinary." --stream=tar ".$sbInfo['datadir_path']." --user=".$sbInfo['mysql_user'].
-								" --password=".$sbInfo['mysql_password']." --slave-info ";
+								" --password=".$sbInfo['mysql_password']." --slave-info --safe-slave-backup";
 			
 					// If table locking for the backup is disabled add the --no-lock option to innobackupex
 					if($sbInfo['lock_tables'] == 'N') {
@@ -299,7 +299,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						$this->infolog->write("Cleaning up files after failure...");
 						$snapshot->deleteFiles();
 					} else {
-						$this->infolog->write("Skipping cleanup as cleanup_on_failure is turned off...");
+						$this->infolog->write("Skipping cleanup as cleanup_on_failure is turned off...", XBM_LOG_INFO);
 					}
 					$snapshot->setStatus('FAILED');
 					// Rethrow
@@ -388,8 +388,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	
 					// Command should look like this:
 					// xtrabackup_51 --backup --target-dir=/data/backups/bup06-int/test --incremental-lsn='0:46850' --datadir=/mysqldb/data 2>&1
-					$xbCommand = "ssh ".$sbInfo['backup_user']."@".$hostInfo['hostname']." '".$xbBinary." --backup --target-dir=".$tempDir." --incremental-lsn=".$lsn." --datadir=".$sbInfo['datadir_path']."' 1>&2";
-	
+					$xbCommand = "ssh ".$sbInfo['backup_user']."@".$hostInfo['hostname']." 'innobackupex --ibbackup=".$xbBinary." --slave-info --incremental-lsn=".$lsn." ".$tempDir."/deltas".
+								" --user=".$sbInfo['mysql_user']." --safe-slave-backup ".
+                                " --password=".$sbInfo['mysql_password']." --no-timestamp --incremental 1>&2 '";
 					
 					// Set up how we'll interact with the IO file handlers of the process
 					$xbDescriptors = Array(
@@ -411,7 +412,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$snapshot->setStatus('RUNNING');
 				
 					// Info output
-					$this->infolog->write("Staging an INCREMENTAL xtrabackup snapshot of ".$sbInfo['datadir_path']." via ssh: ".$sbInfo['backup_user']."@".$hostInfo['hostname']." to $tempDir...", XBM_LOG_INFO);
+					$this->infolog->write("Staging an INCREMENTAL xtrabackup snapshot of ".$sbInfo['datadir_path']." via ssh: ".$sbInfo['backup_user']."@".$hostInfo['hostname']." to ".$tempDir."/deltas...", XBM_LOG_INFO);
 					
 					// Start the xtrabackup process
 					$xbProc = proc_open($xbCommand, $xbDescriptors, $xbPipes);
@@ -491,7 +492,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		
 					$ncClient = $ncBuilder->getClientCommand($config['SYSTEM']['xbm_hostname'], $rbInfo['port']);
 					// Copy the backup back via the netcat listener
-					$copyCommand = "ssh ".$sbInfo['backup_user']."@".$hostInfo['hostname']." 'cd $tempDir; tar cvf - . | ".$ncClient." '";
+					$copyCommand = "ssh ".$sbInfo['backup_user']."@".$hostInfo['hostname']." 'cd ".$tempDir."/deltas; tar cvf - . | ".$ncClient." '";
 	
 					// Set the state of the snapshot to COPYING
 					$snapshot->setStatus('COPYING');
@@ -553,7 +554,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						$this->infolog->write("Cleaning up files after failure...");
 						$snapshot->deleteFiles();
 					} else {
-						$this->infolog->write("Skipping cleanup as cleanup_on_failure is turned off...");
+						$this->infolog->write("Skipping cleanup as cleanup_on_failure is turned off...", XBM_LOG_INFO);
 					}
 					$snapshot->setStatus('FAILED');
 
