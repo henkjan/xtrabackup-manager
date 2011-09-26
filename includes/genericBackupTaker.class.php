@@ -146,7 +146,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					// Proceed with running the backup
 			
 					// Build the command...
-					$xbCommand = 'ssh '.$sbInfo['backup_user'].'@'.$hostInfo['hostname']." 'innobackupex-1.5.1 --ibbackup=".$xbBinary." --stream=tar ".$sbInfo['datadir_path']." --user=".$sbInfo['mysql_user'].
+					$xbCommand = 'ssh '.$sbInfo['backup_user'].'@'.$hostInfo['hostname']." 'innobackupex --ibbackup=".$xbBinary." --stream=tar ".$sbInfo['datadir_path']." --user=".$sbInfo['mysql_user'].
 								" --password=".$sbInfo['mysql_password']." --slave-info --safe-slave-backup";
 			
 					// If table locking for the backup is disabled add the --no-lock option to innobackupex
@@ -232,7 +232,6 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			
 			
 					// Build the command for applying log
-					//$applyCommand = ' cd '.$path.' ; innobackupex-1.5.1 --apply-log --ibbackup='.$xbBinary.' --defaults-file=backup-my.cnf ./ 1>&2';
 					$applyCommand = $xbBinary." --defaults-file=".$path."/backup-my.cnf --use-memory=".$config['SYSTEM']['xtrabackup_use_memory']." --prepare --apply-log-only --target-dir=".$path." 1>&2";
 			
 					// Set up how we'll interact with the IO file handlers of the process
@@ -387,7 +386,6 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$xbBinary = $scheduledBackup->getXtraBackupBinary();
 	
 					// Command should look like this:
-					// xtrabackup_51 --backup --target-dir=/data/backups/bup06-int/test --incremental-lsn='0:46850' --datadir=/mysqldb/data 2>&1
 					$xbCommand = "ssh ".$sbInfo['backup_user']."@".$hostInfo['hostname']." 'innobackupex --ibbackup=".$xbBinary." --slave-info --incremental-lsn=".$lsn." ".$tempDir."/deltas".
 								" --user=".$sbInfo['mysql_user']." --safe-slave-backup ".
                                 " --password=".$sbInfo['mysql_password']." --no-timestamp --incremental 1>&2 '";
