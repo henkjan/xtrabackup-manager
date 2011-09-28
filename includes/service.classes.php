@@ -950,10 +950,18 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('recursiveDeleter->delTree: '."Error: Detected attempt to delete unsafe path: $dir - Aborting.");
 			}
 
+			// Add a trailing slash if there isnt one
+			$dir = rtrim($dir, '/'). '/';
+
 			$files = glob( $dir . '*', GLOB_MARK ); 
 
-			foreach( $files as $file ){ 
+			foreach( $files as $file ) { 
 				if( substr( $file, -1 ) == '/' ) {
+					// Skip if the file is the directory we are removing
+					// happens if empty
+					if(rtrim($dir, '/') == rtrim($file, '/') ) {
+						continue;
+					}
 					$this->delTree( $file );
 				} else {
 					if( ! unlink( $file ) ) {
@@ -961,6 +969,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					}
 				}
 			} 
+
 			if( ! rmdir( $dir ) ) {
 				throw new Exception('recursiveDeleter->delTree: '."Error: Could not rmdir() on $dir");
 			}
