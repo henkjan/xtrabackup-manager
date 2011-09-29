@@ -200,7 +200,7 @@ CREATE TABLE `scheduled_backups` (
   `datadir_path` varchar(1024) NOT NULL default '',
   `mysql_user` char(16) NOT NULL,
   `mysql_password` varchar(256) NOT NULL default '',
-  `lock_tables` enum('Y','N') default 'Y',
+  `lock_tables` enum('Y','N') default 'N',
   `host_id` int(10) unsigned NOT NULL,
   `active` enum('Y','N') default 'Y',
   `backup_volume_id` int(10) unsigned default NULL,
