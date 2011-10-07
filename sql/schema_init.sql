@@ -196,7 +196,7 @@ CREATE TABLE `scheduled_backups` (
   `scheduled_backup_id` int(10) unsigned NOT NULL auto_increment,
   `name` varchar(128) NOT NULL,
   `cron_expression` varchar(128) default NULL,
-  `backup_user` varchar(256) NOT NULL default 'xbm',
+  `backup_user` varchar(256) NOT NULL default 'mysql',
   `datadir_path` varchar(1024) NOT NULL default '',
   `mysql_user` char(16) NOT NULL,
   `mysql_password` varchar(256) NOT NULL default '',
