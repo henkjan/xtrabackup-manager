@@ -229,6 +229,23 @@ CREATE TABLE `queue_tickets` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
+--
+-- Table structure for table `materialized_snapshots`
+--
+
+DROP TABLE IF EXISTS `materialized_snapshots`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `materialized_snapshots` (
+  `materialized_snapshot_id` int(11) NOT NULL auto_increment,
+  `status` varchar(64) default 'INITIALIZING',
+  `creation_time` timestamp NOT NULL default CURRENT_TIMESTAMP,
+  `backup_snapshot_id` int(11) NOT NULL,
+  `scheduled_backup_id` int(11) NOT NULL,
+  PRIMARY KEY  (`materialized_snapshot_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
