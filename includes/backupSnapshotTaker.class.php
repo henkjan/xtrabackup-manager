@@ -208,7 +208,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			// Get ticket/queue
 			$postProcessQueueName = 'postProcess:'.$sbInfo['scheduled_backup_id'];
-			$postProcessQueueTicket = $queueManager->getTicketNumber($postProcessQueueName, $postProcessQueueTicket);
+			$postProcessQueueTicket = $queueManager->getTicketNumber($postProcessQueueName);
 			while(!$queueManager->checkFrontOfQueue($postProcessQueueName, $postProcessQueueTicket) ) {
 				$this->infolog->write('There is already a task performing post processing for this scheduled backup. Sleeping '.XBM_SLEEP_SECS.' before retry...', XBM_LOG_INFO);
 				sleep(XBM_SLEEP_SECS);
