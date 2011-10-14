@@ -168,9 +168,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			// If we have a staging tmpdir -- try to remove it
 			if( isSet($this->remoteTempDir) && is_object($this->remoteTempDir) ) {
 
-				if( ! $this->remoteTempDir->destroy() ) {
-					throw new Exception('runningBackup->finish: '.$this->remoteTempDir->error);
-				}
+				$this->remoteTempDir->destroy();
 
 			}
 

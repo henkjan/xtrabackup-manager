@@ -1067,6 +1067,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	class remoteTempDir {
 
 		function __construct() {
+			$this->initSuccess = false;
 		}
 
 		// Create the tmpdir remotely and return the path information
@@ -1088,10 +1089,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			} while ( ( $returnVar != 0 ) && $c < 5 );
 
 			if($c >= 5) {
-				throw new Exception('tempDirMaker->makeTempDir: '."Error: Gave up trying to create a temporary directory on ".$user."@".$host." after $c attempts. Last output:\n".implode("\n",$output));
+				throw new Exception('remoteTempDir->makeTempDir: '."Error: Gave up trying to create a temporary directory on ".$user."@".$host." after $c attempts. Last output:\n".implode("\n",$output));
 			}
 
 			$this->dir = $path;
+			$this->initSuccess = true;
 			return $path;
 
 		}
@@ -1099,6 +1101,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		// Destroy the remote tmpdir
 		function destroy() {
 
+			// If this never init successfully, then nothing to destroy...
+			if($this->initSuccess == false) {
+				return;
+			}
 
 			if( !isSet($this->host) || !isSet($this->user) || !isSet($this->dir) ) {
 				throw new Exception('remoteTempDir->destroy: '."Error: Expected this object to be populated with host, user and dir, but did not find them.");
