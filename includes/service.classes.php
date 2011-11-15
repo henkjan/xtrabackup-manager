@@ -1085,7 +1085,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			do
 			{
 				$path = $dir.$prefix.mt_rand(0, 9999999);
-				$cmd = 'ssh '.$user.'@'.$host." 'mkdir $path' 2>&1";
+				$cmd = 'ssh -o StrictHostKeyChecking=no '.$user.'@'.$host." 'mkdir $path' 2>&1";
 				@exec($cmd, $output, $returnVar);
 				$c++;
 			} while ( ( $returnVar != 0 ) && $c < 5 );
@@ -1117,7 +1117,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 
-			$cmd = 'ssh '.$this->user.'@'.$this->host." 'rm -rf ".$this->dir."' 2>&1";
+			$cmd = 'ssh -o StrictHostKeyChecking=no '.$this->user.'@'.$this->host." 'rm -rf ".$this->dir."' 2>&1";
 			@exec($cmd, $output, $returnVar);
 
 			if( $returnVar != 0 ) {

@@ -146,7 +146,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					// Proceed with running the backup
 			
 					// Build the command...
-					$xbCommand = 'ssh '.$sbInfo['backup_user'].'@'.$hostInfo['hostname']." 'innobackupex --ibbackup=".$xbBinary." --stream=tar ".$sbInfo['datadir_path']." --user=".$sbInfo['mysql_user'].
+					$xbCommand = 'ssh -o StrictHostKeyChecking=no '.$sbInfo['backup_user'].'@'.$hostInfo['hostname']." 'innobackupex --ibbackup=".$xbBinary." --stream=tar ".$sbInfo['datadir_path']." --user=".$sbInfo['mysql_user'].
 								" --password=".$sbInfo['mysql_password']." --slave-info --safe-slave-backup";
 			
 					// If table locking for the backup is disabled add the --no-lock option to innobackupex
@@ -386,7 +386,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$xbBinary = $scheduledBackup->getXtraBackupBinary();
 	
 					// Command should look like this:
-					$xbCommand = "ssh ".$sbInfo['backup_user']."@".$hostInfo['hostname']." 'innobackupex --ibbackup=".$xbBinary." --slave-info --incremental-lsn=".$lsn." ".$tempDir."/deltas".
+					$xbCommand = "ssh -o StrictHostKeyChecking=no ".$sbInfo['backup_user']."@".$hostInfo['hostname']." 'innobackupex --ibbackup=".$xbBinary." --slave-info --incremental-lsn=".$lsn." ".$tempDir."/deltas".
 								" --user=".$sbInfo['mysql_user']." --safe-slave-backup ".
                                 " --password=".$sbInfo['mysql_password']." --no-timestamp --incremental 1>&2 '";
 					
@@ -490,7 +490,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		
 					$ncClient = $ncBuilder->getClientCommand($config['SYSTEM']['xbm_hostname'], $rbInfo['port']);
 					// Copy the backup back via the netcat listener
-					$copyCommand = "ssh ".$sbInfo['backup_user']."@".$hostInfo['hostname']." 'cd ".$tempDir."/deltas; tar cvf - . | ".$ncClient." '";
+					$copyCommand = "ssh -o StrictHostKeyChecking=no ".$sbInfo['backup_user']."@".$hostInfo['hostname']." 'cd ".$tempDir."/deltas; tar cvf - . | ".$ncClient." '";
 	
 					// Set the state of the snapshot to COPYING
 					$snapshot->setStatus('COPYING');

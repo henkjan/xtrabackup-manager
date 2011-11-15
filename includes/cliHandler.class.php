@@ -990,6 +990,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						echo("Active: ".$hostInfo['active']."  Staging_path: ".$hostInfo['staging_path']."\n\n");
 					}
 
+					if(sizeOf($hosts) == 0 ) {
+						echo("	No hosts configured.\n\n");
+					}
+
 					echo("\n");
 				break;
 
