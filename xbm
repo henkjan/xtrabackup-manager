@@ -24,14 +24,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 	require('includes/init.php');
 
-
-	print("\n".XBM_RELEASE_VERSION."\n\n");
-
-
 	try {
-
-
-//		print_r($argv);
 
 		$log = new logStream(XBM_MAIN_LOG, false, $config['LOGS']['level']);
 

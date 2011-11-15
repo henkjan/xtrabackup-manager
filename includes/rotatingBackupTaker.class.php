@@ -70,17 +70,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			// Pick a rotation method (required)
 			// rotate_method - DAY_OF_WEEK  or  AFTER_SNAPSHOT_COUNT 
-			$validRotationMethods = Array('DAY_OF_WEEK', 'AFTER_SNAPSHOT_COUNT');
-
 			// Validate Rotation Method
-			if(!isSet($sbParams['rotate_method'])) {
-				throw new Exception('rotatingBackupTaker->validateParams: '."Error: rotate_method must be defined for rotating backups.");
-			}
+			scheduledBackup::validateRotateMethod($sbParams['rotate_method']);
 
-			if(!in_array($sbParams['rotate_method'], $validRotationMethods)) {
-				throw new Exception('rotatingBackupTaker->validateParams: '."Error: rotate_method must be defined as one of: ".implode($validRotationMethods, ','));
-			}
-			
 
 			switch($sbParams['rotate_method']) {
 
@@ -93,17 +85,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					// Multiple values accepted in comma separated format - eg. 0,3 for Sunday and Wednesday
 
 					// Validate rotate_day_of_week
-
-					// must be set...
-					if(!isSet($sbParams['rotate_day_of_week'])) {
-						throw new Exception('rotatingBackupTaker->validateParams: '."Error: rotate_day_of_week must be set when using DAY_OF_WEEK rotate_method.");
-					}
-	
-					// must be right format...	
-					$dayOfWeekRegex = '/^[0-6](,[0-6])*$/';
-					if( preg_match($dayOfWeekRegex, $sbParams['rotate_day_of_week']) !== 1 ) {
-						throw new Exception('rotatingBackupTaker->validateParams: '."Error: rotate_day_of_week must be a comma separated list of integers between 0 and 6. 0=Sunday .. 6=Saturday.");
-					}
+					scheduledBackup::validateRotateDayOfWeek($sbParams['rotate_day_of_week']);
 	
 					// max_snapshots_per_group - The max tatal num of snapshots allowed in a group.
 					// Only used with DAY_OF_WEEK rotate_method
@@ -112,19 +94,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					// the backup on the necessary day of the week for any reason.
 
 					// Validate max_snapshots_per_group
-
-					// must be set
-					if(!isSet($sbParams['max_snapshots_per_group']) ) {
-						throw new Exception('rotatingBackupTaker->validateParams: '."Error: max_snapshots_per_group must be set when using DAY_OF_WEEK rotate_method.");
-					}
-					// must be numeric...		
-					if(!is_numeric($sbParams['max_snapshots_per_group']) ) {
-						throw new Exception('rotatingBackupTaker->validateParams: '."Error: max_snapshots_per_group must be numeric.");
-					}
-					// must be >= 1
-					if($sbParams['max_snapshots_per_group'] < 1) {
-						throw new Exception('rotatingBackupTaker->validateParams: '."Error: max_snapshots_per_group must be set to a value >= 1.");
-					}
+					scheduledBackup::validateMaxSnapshotsPerGroup($sbParams['max_snapshots_per_group']);
 
 					// backup_skip_fatal  - If no snapshot is taken because we hit max_snapshots_per_group, but it is not the rotation day of week
 					// consider it a fatal error. 0 for OFF or 1 for ON (default). This can happen if your backup never ran on the day it should have.
@@ -135,11 +105,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						$sbParams['backup_skip_fatal'] = 1;
 					}
 	
-					// Value must be either 0 or 1.
-					if( preg_match('/^[01]$/', $sbParams['backup_skip_fatal']) !== 1 ) {
-						throw new Exception('rotatingBackupTaker->validateParams: '."Error: backup_skip_fatal must be set to either 1=Yes or 0=No.");
-					}
-
+					scheduledBackup::validateBackupSkipFatal($sbParams['backup_skip_fatal']);
 					break;
 
 
@@ -152,21 +118,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					// Eg. if 7 and daily snapshots, you are creating a new group for the 8th.
 
 					// Validate rotate_snapshot_no
-					// must be set
-					if(!isSet($sbParams['rotate_snapshot_no']) ) {
-						throw new Exception('rotatingBackupTaker->validateParams: '."Error: rotate_snapshot_no must be set for AFTER_SNAPSHOT_COUNT rotate_method");
-					}
-
-					// must be numeric
-					if(!is_numeric($sbParams['rotate_snapshot_no'])) {
-						throw new Exception('rotatingBackupTaker->validateParams: '."Error: rotate_snapshot_no must be numeric.");
-					}
-
-					// must be >= 1
-					if($sbParams['rotate_snapshot_no'] < 1 ) {
-						throw new Exception('rotatingBackupTaker->validateParams: '."Error: rotate_snapshot_no must be set to a value >= 1.");
-					}
-
+					scheduledBackup::validateRotateSnapshotNo($sbParams['rotate_snapshot_no']);
 					break;
 
 				default:
@@ -182,28 +134,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			// validate max_snapshot_groups
 			// must be set..
-			if(!isSet($sbParams['max_snapshot_groups'])) {
-				throw new Exception('rotatingBackupTaker->validateParams: '."Error: max_snapshot_groups must be set when using rotating backups.");
-			}
-	
-			// must be numeric
-			if(!is_numeric($sbParams['max_snapshot_groups'])) {
-				throw new Exception('rotatingBackupTaker->validateParams: '."Error: max_snapshot_groups must be numeric.");
-			}
+			scheduledBackup::validateMaxSnapshotGroups($sbParams['max_snapshot_groups']);
 
-			// must be >=1
-			if($sbParams['max_snapshot_groups'] < 1 ) {
-				throw new Exception('rotatingBackupTaker->validateParams: '."Error: max_snapshot_groups must be >= 1.");
-			}
 
 			// validate maintain_materialized_copy (if set)
 			if(isSet($sbParams['maintain_materialized_copy']) ) {
-
-				// must be 0 or 1
-				if( preg_match('/^[01]$/', $sbParams['maintain_materialized_copy']) !== 1 ) {
-					throw new Exception('rotatingBackupTaker->validateParams: '."Error: maintain_materialized_copy must be set to either 1=Yes or 0=No.");
-				}
-			
+				scheduledBackup::validateMaintainMaterializedCopy($sbParams['max_snapshot_groups']);
 			}
 
 			//

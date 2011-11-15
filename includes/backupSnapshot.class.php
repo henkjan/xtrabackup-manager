@@ -255,6 +255,30 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		}
 
+		// Completely destroy this snapshot, files and database entry
+		function destroy() {
+
+			$this->delete();
+
+			if(!is_numeric($this->id)) {
+				throw new Exception('backupSnapshot->destroy: '."Error: The ID for this object is not an integer.");
+			}
+
+
+			$dbGetter = new dbConnectionGetter();
+
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "DELETE FROM backup_snapshots WHERE backup_snapshot_id=".$this->id;
+
+			if( ! $conn->query($sql) ) {
+				throw new Exception('backupSnapshot->destroy: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			return true;
+	
+		}
+
 		// Completely removes all files from the backup snapshot directory and the directory itself
 		function deleteFiles() {
 

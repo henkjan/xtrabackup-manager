@@ -377,7 +377,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$hostGetter = new hostGetter();
 			$hostGetter->setLogStream($this->log);
 
-			$host = $hostGetter->getByName($hostname);
+			if( ! ( $host = $hostGetter->getByName($hostname) ) ) {
+				throw new ProcessingException("Error: Could not find a host defined with hostname: $hostname");
+			}
 
 			$dbGetter = new dbConnectionGetter();
 
@@ -1543,6 +1545,30 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		}
 
+		// Fetch a backupStrategy by id
+		function getById($id) {
+
+			global $config;
+
+			$dbGetter = new dbConnectionGetter();
+
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "SELECT backup_strategy_id FROM backup_strategies WHERE backup_strategy_id=".$id;
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new DBException('backupStrategyGetter->getById: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			if($res->num_rows != 1 ) {
+				return false;
+			}
+
+			$strategy = new backupStrategy($id);
+			$strategy->setLogStream($this->log);
+
+			return $strategy;
+		}
 		
 	}
 ?>

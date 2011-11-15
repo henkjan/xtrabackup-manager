@@ -54,7 +54,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		}
 
-		// Restore $backupSnapshot to local path $path
+		// Restore $backupSnapshot or $materializedBackup to local path $path
 		function restoreLocal($backupSnapshot, $path) {
 
 			$this->validate($backupSnapshot);
@@ -81,64 +81,92 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			// Strip trailing space (and spaces if there are any for some weird reason
 			$path = rtrim($path, '/ ');
 
-			// Get the group for the backup and find the seed for that group.
-			$group = $backupSnapshot->getSnapshotGroup();
+			switch(get_class($backupSnapshot)) {
+		
+				// Handle a regular backupSnapshot class	
+				case 'backupSnapshot':
+					// Get the group for the backup and find the seed for that group.
+					$group = $backupSnapshot->getSnapshotGroup();
 
-			$scheduledBackup = $backupSnapshot->getScheduledBackup();
+					$scheduledBackup = $backupSnapshot->getScheduledBackup();
 
-			// Find the seed of the backupSnapshot
-			$seedSnapshot = $group->getSeed();
+					// Find the seed of the backupSnapshot
+					$seedSnapshot = $group->getSeed();
 
-			// Copy the seed to the right place
-			$seedPath = $seedSnapshot->getPath();
+					// Copy the seed to the right place
+					$seedPath = $seedSnapshot->getPath();
 
-			if($seedSnapshot->id == $backupSnapshot->id) {
-				$msg = 'Copying snapshot from '.$seedPath.' to path '.$path;
-			} else {
-				$msg = 'Copying seed snapshot from '.$seedPath.' to path '.$path;
-			}
+					if($seedSnapshot->id == $backupSnapshot->id) {
+						$msg = 'Copying snapshot from '.$seedPath.' to path '.$path;
+					} else {
+						$msg = 'Copying seed snapshot from '.$seedPath.' to path '.$path;
+					}
 
-			$this->infolog->write($msg, XBM_LOG_INFO);
+					$this->infolog->write($msg, XBM_LOG_INFO);
 
-			$copyCommand = 'cp -R '.$seedPath.'/* '.$path.'/';
+					$copyCommand = 'cp -R '.$seedPath.'/* '.$path.'/';
 
-			exec($copyCommand, $output, $returnVar);
-			if($returnVar <> 0 ) {
-				throw new Exception('backupRestorer->restoreLocal: '."Error: Failed to copy from $seedPath to path $path using command: $copyCommand -- Got output:\n".implode("\n",$output));
-			}
+					exec($copyCommand, $output, $returnVar);
+					if($returnVar <> 0 ) {
+						throw new Exception('backupRestorer->restoreLocal: '."Error: Failed to copy from $seedPath to path $path using command: $copyCommand -- Got output:\n".implode("\n",$output));
+					}
 			
 
-			$this->infolog->write('Done copying.', XBM_LOG_INFO);
+					$this->infolog->write('Done copying.', XBM_LOG_INFO);
 
-			// If the seed is what we wanted to restore, we're done!
-			if($seedSnapshot->id == $backupSnapshot->id) 
-				return true;
+					// If the seed is what we wanted to restore, we're done!
+					if($seedSnapshot->id == $backupSnapshot->id) 
+						return true;
 
-			$xbBinary = $scheduledBackup->getXtraBackupBinary();
+					$xbBinary = $scheduledBackup->getXtraBackupBinary();
 
-			// Proceed with applying any incrementals needed to get to the snapshot we want!
-			$snapshotMerger = new backupSnapshotMerger();
+					// Proceed with applying any incrementals needed to get to the snapshot we want!
+					$snapshotMerger = new backupSnapshotMerger();
 
-			$parentSnapshot = $seedSnapshot;
+					$parentSnapshot = $seedSnapshot;
 
-			do {
+					do {
 
-				$deltaSnapshot = $parentSnapshot->getChild();
-				$deltaPath = $deltaSnapshot->getPath();
+						$deltaSnapshot = $parentSnapshot->getChild();
+						$deltaPath = $deltaSnapshot->getPath();
 
-				$this->infolog->write('Merging incremental snapshot deltas from '.$deltaPath.' into path '.$path, XBM_LOG_INFO);
+						$this->infolog->write('Merging incremental snapshot deltas from '.$deltaPath.' into path '.$path, XBM_LOG_INFO);
 
-				$snapshotMerger->mergePaths($path, $deltaPath, $xbBinary);
+						$snapshotMerger->mergePaths($path, $deltaPath, $xbBinary);
 		
-				$this->infolog->write('Done merging.', XBM_LOG_INFO);
-				$parentSnapshot = $deltaSnapshot;
+						$this->infolog->write('Done merging.', XBM_LOG_INFO);
+						$parentSnapshot = $deltaSnapshot;
 
-			} while ( $deltaSnapshot->id != $backupSnapshot->id );
+					} while ( $deltaSnapshot->id != $backupSnapshot->id );
+
+
+				break;
+
+				case 'materializedSnapshot':
+
+					$snapPath = $backupSnapshot->getPath();
+					$msg = 'Copying snapshot from '.$snapPath.' to path '.$path;
+					$this->infolog->write($msg, XBM_LOG_INFO);
+
+                    $copyCommand = 'cp -R '.$snapPath.'/* '.$path.'/';
+
+                    exec($copyCommand, $output, $returnVar);
+                    if($returnVar <> 0 ) {
+                        throw new Exception('backupRestorer->restoreLocal: '."Error: Failed to copy from $snapPath to path $path using command: $copyCommand -- Got output:\n".implode("\n",$output));
+                    }
+
+
+                    $this->infolog->write('Done copying.', XBM_LOG_INFO);
+				break;
+
+				default:
+					throw new ProcessingException('backupRestorer->restoreLocal: '."Error: Unrecognized class of backup snapshot to restore.");
+				break;
+			}
 
 			$this->infolog->write('Local restore to '.$path.' complete!', XBM_LOG_INFO);
 			return true;	
 
-			
 
 		}
 

@@ -62,7 +62,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('scheduledBackup->getInfo: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
 			}
 	
-			$info = $res->fetch_array();
+			if( ! ($info = $res->fetch_array() ) ) {
+				throw new Exception('scheduledBackup->getInfo: '."Error: Could not getInfo for this Scheduled Backup Task. No entry found -- Perhaps this Scheduled Backup Task was deleted.");
+			}
 
 			return $info;
 
@@ -109,6 +111,19 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$host = $hostGetter->getById($info['host_id']);
 
 			return $host;
+
+		}
+
+		// Get the backupStrategy object that this scheduledBackup is set to use
+		function getBackupStrategy() {
+
+			$info = $this->getInfo();
+
+			$backupStrategyGetter = new backupStrategyGetter();
+			$backupStrategyGetter->setLogStream($this->log);
+			$strat = $backupStrategyGetter->getById($info['backup_strategy_id']);
+
+			return $strat;
 
 		}
 
@@ -175,6 +190,29 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			throw new Exception('scheduledBackup->getSeed: '."Error: Failed to determine if there was a valid seed and return it. This should not happen.");
+
+		}
+
+		// Return the number of completed snapshots for this scheduledBackup
+		function getCompletedSnapshotCount() {
+
+			global $config;
+
+			if(!is_numeric($this->id)) {
+				throw new Exception('scheduledBackup->getCompletedSnapshotCount: '."Error: The ID for this object is not an integer.");
+			}
+
+			$dbGetter = new dbConnectionGetter($config);
+
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE scheduled_backup_id=".$this->id." AND status='COMPLETED'";
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new Exception('scheduledBackup->getCompletedSnapshotCount: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			return $res->num_rows;
 
 		}
 
@@ -445,15 +483,368 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		// Validate a backup user
 		public static function validateBackupUser($user) {
 
-            if(!isSet($user)) {
-                throw new InputException("Error: Expected a Backup User as a parameter, but did not get one.");
-            }
+			if(!isSet($user)) {
+				throw new InputException("Error: Expected a Backup User as a parameter, but did not get one.");
+			}
 
-            if(strlen($user) < 1 || strlen($user) > 256 ) {
-                throw new InputException("Error: Backup User must be between 1 and 256 characters in length.");
-            }
+			if(strlen($user) < 1 || strlen($user) > 256 ) {
+				throw new InputException("Error: Backup User must be between 1 and 256 characters in length.");
+			}
 
-            return;
+			return;
+
+		}
+
+		// Validate a Yes/No
+		public static function validateYesNo($param) {
+
+			if(!isSet($param)) {
+				throw new InputException("Error: Expected a Y or N as an active flag, but did not get one.");
+			}
+
+			if( ! in_array($param, array('Y', 'N') ) ) {
+				throw new InputException("Error: Actuve flag must be either Y or N.");
+			}
+
+			return;
+
+		}
+
+		// Validate a backup user
+		public static function validateActive($param) {
+
+			self::validateYesNo($param);
+
+			return;
+
+		}
+
+		// Validate a backup user
+		public static function validateLockTables($param) {
+
+			self::validateYesNo($param);
+
+			return;
+
+		}
+
+		// Validate rotate_day_of_week parameter
+		public static function validateRotateDayOfWeek($param) {
+			
+			if( !isSet($param) || preg_match($dayOfWeekRegex, $param) !== 1 ) {
+				throw new InputException("Error: rotate_day_of_week must be a comma separated list of integers between 0 and 6. 0=Sunday .. 6=Saturday.");
+			}
+
+		}
+
+		// Validate rotate_method
+		public static function validateRotateMethod($param) {
+			$validRotationMethods = Array('DAY_OF_WEEK', 'AFTER_SNAPSHOT_COUNT');
+			if(!in_array($param, $validRotationMethods)) {
+				throw new InputException("Error: rotate_method must be defined as one of: ".implode($validRotationMethods, ','));
+			}
+		}
+
+		// Validate maintain_materialized_copy
+		public static function validateMaintainMaterializedCopy($param) {
+			// must be 0 or 1
+			if( preg_match('/^[01]$/', $param) !== 1 ) {
+				throw new InputException("Error: maintain_materialized_copy must be set to either 1=Yes or 0=No.");
+			}
+
+		}
+
+		// Validate max_snapshots
+		public static function validateMaxSnapshots($param) {
+			// must be set
+			if(!isSet($param) ) {
+				throw new InputException("Error: max_snapshots must be set when using DAY_OF_WEEK rotate_method.");
+			}
+			// must be numeric...	   
+			if(!is_numeric($param) ) {
+				throw new InputException("Error: max_snapshots must be numeric.");
+			}
+			// must be >= 1
+			if($param < 1) {
+				throw new InputException("Error: max_snapshots must be set to a value >= 1.");
+			}
+		}
+
+		// Validate max_snapshots_per_group
+		public static function validateMaxSnapshotsPerGroup($param) {
+			// must be set
+			if(!isSet($param) ) {
+				throw new InputException("Error: max_snapshots_per_group must be set when using DAY_OF_WEEK rotate_method.");
+			}
+			// must be numeric...	   
+			if(!is_numeric($param) ) {
+				throw new InputException("Error: max_snapshots_per_group must be numeric.");
+			}
+			// must be >= 1
+			if($param < 1) {
+				throw new InputException("Error: max_snapshots_per_group must be set to a value >= 1.");
+			}
+		}
+
+		// Validate backup_skip_fatal
+		public static function validateBackupSkipFatal($param) {
+			// Value must be either 0 or 1.
+			if( preg_match('/^[01]$/', $param) !== 1 ) {
+				throw new InputException("Error: backup_skip_fatal must be set to either 1=Yes or 0=No.");
+			}
+		}
+
+		// Validate rotate_snapshot_no
+		public static function validateRotateSnapshotNo($param) {
+			// must be set
+			if(!isSet($param) ) {
+				throw new InputException("Error: rotate_snapshot_no must be set when using DAY_OF_WEEK rotate_method.");
+			}
+			// must be numeric...	   
+			if(!is_numeric($param) ) {
+				throw new InputException("Error: rotate_snapshot_no must be numeric.");
+			}
+			// must be >= 1
+			if($param < 1) {
+				throw new InputException("Error: rotate_snapshot_no must be set to a value >= 1.");
+			}
+		}
+
+		// Validate max_snapshot_groups
+		public static function validateMaxSnapshotGroups($param) {
+			// must be set
+			if(!isSet($param) ) {
+				throw new InputException("Error: max_snapshot_groups must be set when using DAY_OF_WEEK rotate_method.");
+			}
+			// must be numeric...	   
+			if(!is_numeric($param) ) {
+				throw new InputException("Error: max_snapshot_groups must be numeric.");
+			}
+			// must be >= 1
+			if($param < 1) {
+				throw new InputException("Error: max_snapshot_groups must be set to a value >= 1.");
+			}
+		}
+
+		// Set Param to value for the scheduledBackup
+		function setParam($param, $value) {
+
+			// Validate this...
+			if(!is_numeric($this->id)) {
+				throw new Exception('scheduledBackup->setParam: '."Error: The ID for this object is not an integer.");
+			}
+
+			$dbGetter = new dbConnectionGetter();
+			$conn = $dbGetter->getConnection($this->log);
+
+			switch(strtolower($param)) {
+
+				case 'name':
+					self::validateName($value);
+					$sql = "UPDATE scheduled_backups SET name='".$conn->real_escape_string($value)."' WHERE scheduled_backup_id=".$this->id;
+				break;
+
+				case 'cron_expression':
+					self::validateCronExpression($value);
+					$sql = "UPDATE scheduled_backups SET cron_expression='".$conn->real_escape_string($value)."' WHERE scheduled_backup_id=".$this->id;
+				break;
+
+				case 'backup_user':
+					self::validateBackupUser($value);
+					$sql = "UPDATE scheduled_backups SET backup_user='".$conn->real_escape_string($value)."' WHERE scheduled_backup_id=".$this->id;
+				break;
+
+				case 'datadir_path':
+					self::validateDatadirPath($value);
+					$sql = "UPDATE scheduled_backups SET datadir_path='".$conn->real_escape_string($value)."' WHERE scheduled_backup_id=".$this->id;
+				break;
+
+				case 'mysql_user':
+					self::validateMysqlUser($value);
+					$sql = "UPDATE scheduled_backups SET mysql_user='".$conn->real_escape_string($value)."' WHERE scheduled_backup_id=".$this->id;
+				break;
+
+				case 'mysql_password':
+					self::validateMysqlPass($value);
+					$sql = "UPDATE scheduled_backups SET mysql_password='".$conn->real_escape_string($value)."' WHERE scheduled_backup_id=".$this->id;
+				break;
+
+				case 'lock_tables':
+					// Force param to upper case..
+					$value = strtoupper($value);
+					self::validateLockTables($value);
+					$sql = "UPDATE scheduled_backups SET lock_tables='".$conn->real_escape_string($value)."' WHERE scheduled_backup_id=".$this->id;
+				break;
+
+				case 'active':
+					// Force param to upper case..
+					$value = strtoupper($value);
+					self::validateActive($value);
+					$sql = "UPDATE scheduled_backups SET active='".$conn->real_escape_string($value)."' WHERE scheduled_backup_id=".$this->id;
+				break;
+
+				//
+				// Handle the parameters specific to the backup strategy of this backup //
+				//
+				case 'rotate_day_of_week':
+				case 'rotate_method':
+				case 'maintain_materialized_copy':
+				case 'max_snapshots':
+				case 'max_snapshots_per_group':
+				case 'backup_skip_fatal':
+				case 'rotate_snapshot_no':
+				case 'max_snapshot_groups':
+					$this->setBackupStrategyParam($param, $value);
+					return;
+				break;
+
+				default:
+					throw new InputException("Error: Unknown Scheduled Backup parameter: ".$param);
+				break;
+			}
+
+			if( ! $conn->query($sql) ) {
+				throw new DBException('scheduledBackup->setParam: '."Error: Query $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			return;
+
+		}
+
+		// Set the backup strategy parameter $param to value $value
+		function setBackupStrategyParam($param, $value) {
+
+			// Validate
+			if(!is_numeric($this->id)) {
+				throw new Exception('scheduledBackup->setBackupStrategyParam: '."Error: The ID for this object is not an integer");
+			}
+
+			// Check to make sure that the backup Strategy for this backup supports the specified parameter...
+			$validParams = array_keys($this->getParameters());
+			if(!in_array($param, $validParams) ) {
+				throw new ProcessingException("Error: The specified parameter is not valid for this Scheduled Backup: $param.");
+			}
+
+			$sql = "UPDATE
+						scheduled_backups sb JOIN backup_strategy_params bsp 
+							ON sb.backup_strategy_id = bsp.backup_strategy_id 
+						JOIN scheduled_backup_params sbp
+							ON sbp.scheduled_backup_id = sb.scheduled_backup_id AND 
+								bsp.backup_strategy_param_id = sbp.backup_strategy_param_id ";
+
+
+			// Handle param
+			switch($param) {
+
+				case 'rotate_day_of_week':
+					self::validateRotateDayOfWeek($value);
+
+				break;
+
+				case 'rotate_method':
+					self::validateRotateMethod($value);
+				break;
+
+				case 'maintain_materialized_copy':
+					self::validateMaintainMaterializedCopy($value);
+				break;
+
+				case 'max_snapshots':
+					self::validateMaxSnapshots($value);
+				break;
+
+				case 'max_snapshots_per_group':
+					self::validateMaxSnapshotsPerGroup($value);
+				break;
+
+				case 'backup_skip_fatal':
+					self::validateBackupSkipFatal($value);
+				break;
+
+				case 'rotate_snapshot_no':
+					self::validateRotateSnapshotNo($value);
+				break;
+
+				case 'max_snapshot_groups':
+					self::validateMaxSnapshotGroups($value);
+				break;
+
+				default:
+					throw new InputException("Error: Unrecognized Backup Strategy Parameter: $param");
+
+			}
+
+			$dbGetter = new dbConnectionGetter();
+			$conn = $dbGetter->getConnection($this->log);
+
+			$sql .= " SET sbp.param_value='".$conn->real_escape_string($value)."' ";
+			$sql .= " WHERE sb.scheduled_backup_id=".$this->id." AND bsp.param_name='".$conn->real_escape_string($param)."'";
+
+			if( ! $conn->query($sql) ) {
+				throw new DBException('scheduledBackup->setParam: '."Error: Query $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			return;
+			
+		}
+
+
+		// Destroy this scheduled backup and anything attached to it.
+		function destroy() {
+
+			// Validate this...
+			if(!is_numeric($this->id)) {
+				throw new Exception('scheduledBackup->destroy: '."Error: The ID for this object is not an integer.");
+			}
+
+			$queueManager = new queueManager();
+			$queueManager->setLogStream($this->log);
+
+			// We need to take over all queues for this backup and make sure nothing is running.
+			$queues = Array('scheduledBackup:'.$this->id, 'retentionApply:'.$this->id, 'postProcess:'.$this->id);
+			foreach($queues as $queue) {
+				$ticket = $queueManager->getTicketNumber($queue);
+				if( ! $queueManager->checkFrontOfQueue($queue, $ticket) ) {
+					throw new ProcessingException("Error: Cannot remove the Scheduled Backup Task as it is currently running.");
+				}
+			}
+
+
+			// Check to see if anything is running for this scheduledBackup
+			$runningBackupGetter = new runningBackupGetter();
+			$runningBackupGetter->setLogStream($this->log);
+
+			$runningBackups = $runningBackupGetter->getByScheduledBackup($this);
+
+			if(sizeOf($runningBackups) > 0 ) {
+				throw new ProcessingException("Error: Cannot remove the Scheduled Backup Task as it is currently running.");
+			}
+
+			// Get all snapshots and destroy them..
+			$groups = $this->getSnapshotGroupsNewestToOldest();
+			foreach( $groups as $group ) {
+				$snapshots = $group->getAllSnapshotsNewestToOldest();
+				foreach($snapshots as $snapshot) {
+					$snapshot->destroy();
+				}
+			}
+
+			// If we have a materialized snapshot - destroy that too
+			if( $latestMaterialized = $this->getMostRecentCompletedMaterializedSnapshot() ) {
+				$latestMaterialized->destroy();
+			}
+
+			$dbGetter = new dbConnectionGetter();
+			$conn = $dbGetter->getConnection($this->log);
+
+			// Remove DB the entries for this scheduledBackup
+			$sql = "DELETE sb.*, sbp.* FROM scheduled_backups sb JOIN scheduled_backup_params sbp USING (scheduled_backup_id) WHERE scheduled_backup_id = ".$this->id;
+
+			if( ! $conn->query($sql) ) {
+				throw new DBException('scheduledBackup->setParam: '."Error: Query $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			return;			
 
 		}
 

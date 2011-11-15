@@ -61,20 +61,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		function validateParams($params) {
 
-			// max_snapshots must be set
-			if(!isSet($params['max_snapshots'])) {
-				throw new Exception('continuousIncrementalBackupTaker->validateParams: '."Error: max_snapshots must be configured when using continuous incremental backups.");
-			}
-
-			// max_snapshots must be numeric
-			if(!is_numeric($params['max_snapshots'])) {
-				throw new Exception('continuousIncrementalBackupTaker->validateParams: '."Error: max_snapshots must be numeric.");
-			}
-
-			// max_snapshots must be >=1
-			if($params['max_snapshots'] < 1) {
-				throw new Exception('continuousIncrementalBackupTaker->validateParams: '."Error: max_snapshots must be greater than or equal to 1.");
-			}
+			// max_snapshots 
+			scheduledBackup::validateMaxSnapshots($params['max_snapshots']);
 
 			return true;
 
