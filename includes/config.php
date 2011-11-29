@@ -42,14 +42,14 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 	// Whether or not to clean up after ourselves when a backup fails
 	// Keeping the files around can be useful for troubleshooting what may have gone wrong
-	$config['SYSTEM']['cleanup_on_failure'] = 0;
-
+	$config['SYSTEM']['cleanup_on_failure'] = 1;
 
 	// How much memory to allocate when performing --apply-log
 	// This is given to xtrabackup / innobackupex as --use-memory parameter when
 	// applying deltas or preparing backups after copying files.
 
 	// Using 1G default - be mindful of this multiplied by possible concurrent backup jobs
+	// Setting too high for will result in slower results due to problems with older linked versions of InnoDB
 	$config['SYSTEM']['xtrabackup_use_memory'] = 1073741824; 
 
 	// How many can run at once
@@ -73,11 +73,16 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	// Socket to use -- Comment out if you don't want to use a socket file to connect (TCP)
 	//$config['DB']['socket'] = '/mysqldb/tmp/mysql.sock';
 
-	/* INACTIVE FEATURE OPTIONS */
 
-	// Where to send emails when ALERTs occur - not enabled yet
-	$config['ALERTS']['email'] = 'lmulcahy@marinsoftware.com, mdicarlo@marinsoftware.com';
-	$config['ALERTS']['enabled'] = true;
-	$config['ALERTS']['replyto'] = 'alerts@marinsoftware.com';
+	// Email alerts
+
+	// Send email alerts when failures are caught? true/false
+	$config['ALERTS']['enabled'] = false;
+
+	// Where should alert emails be sent to? Comma separated for multiple email addresses
+	// $config['ALERTS']['email'] = 'alertlist@yourdomain.com';
+
+	// What should the reply to address for alert emails be
+	// $config['ALERTS']['replyto'] = 'alerts@yourdomain.com';
 
 ?>
