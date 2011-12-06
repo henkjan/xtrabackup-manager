@@ -206,6 +206,7 @@ CREATE TABLE `scheduled_backups` (
   `backup_volume_id` int(10) unsigned default NULL,
   `mysql_type_id` int(10) unsigned default NULL,
   `backup_strategy_id` int(10) unsigned NOT NULL default '1',
+  `throttle` int(10) unsigned NOT NULL default 0,
   PRIMARY KEY  (`scheduled_backup_id`),
   UNIQUE KEY `i_host_name` (`name`,`host_id`),
   KEY `i_host` (`host_id`)
@@ -245,6 +246,29 @@ CREATE TABLE `materialized_snapshots` (
   PRIMARY KEY  (`materialized_snapshot_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
+
+
+--
+-- Table structure for table `schema_version`
+--
+
+DROP TABLE IF EXISTS `schema_version`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `schema_version` (
+  `version` int(10) unsigned NOT NULL default '1000'
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Dumping data for table `schema_version`
+--
+
+LOCK TABLES `schema_version` WRITE;
+/*!40000 ALTER TABLE `schema_version` DISABLE KEYS */;
+INSERT INTO `schema_version` VALUES (1000);
+/*!40000 ALTER TABLE `schema_version` ENABLE KEYS */;
+UNLOCK TABLES;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

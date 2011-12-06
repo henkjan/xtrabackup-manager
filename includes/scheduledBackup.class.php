@@ -510,6 +510,19 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		}
 
+		// Validate Throttle value
+		public static function validateThrottle($param) {
+
+			if(!isSet($param)) {
+				throw new InputException("Error: Expected a throttle value as a parameter, but did not get one.");
+			}
+
+			if(!is_numeric($param) || ! ( $throttle >= 0) ) {
+				throw new InputException("Error: Throttle value must be numeric and greater than or equal to 0.");
+			}
+
+		}
+
 		// Validate a backup user
 		public static function validateActive($param) {
 
@@ -530,6 +543,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		// Validate rotate_day_of_week parameter
 		public static function validateRotateDayOfWeek($param) {
+			$dayOfWeekRegex = '/^[0-6](,[0-6])*$/';
 			
 			if( !isSet($param) || preg_match($dayOfWeekRegex, $param) !== 1 ) {
 				throw new InputException("Error: rotate_day_of_week must be a comma separated list of integers between 0 and 6. 0=Sunday .. 6=Saturday.");
@@ -681,6 +695,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$value = strtoupper($value);
 					self::validateActive($value);
 					$sql = "UPDATE scheduled_backups SET active='".$conn->real_escape_string($value)."' WHERE scheduled_backup_id=".$this->id;
+				break;
+
+				case 'throttle':
+					self::validateThrottle($value);
+					$sql = "UPDATE scheduled_backups SET throttle=".$value." WHERE scheduled_backup_id=".$this->id;
 				break;
 
 				//
@@ -847,6 +866,57 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			return;			
 
 		}
+
+		// Get the throttle value we must pass to XtraBackup
+		// Based on my tests:
+		// * XtraBackup will burn a 2MB/s just for log scanning
+		// * XtraBackup IOPs are 1MB each
+		// Thus a minimum value given of 1 will result in 3MB/s of IO
+		// When users tell XBM they want to throttle at X MB/s - we take into account this 2MB/s.
+		function getXtraBackupThrottleValue() {
+			
+			// Validate this...
+			if(!is_numeric($this->id)) {
+				throw new Exception('scheduledBackup->getXtraBackupThrottleValue: '."Error: The ID for this object is not an integer.");
+			}
+
+			$info = $this->getInfo();
+
+			// If it is disabled, return 0.
+			if($info['throttle'] <= 0 ) {
+				return 0;
+			}
+
+			// Otherwise figure out what adjusted value to use...
+
+			// Remove the 2MB/sec that is burned for log scanning
+			$throttleVal = $info['throttle'] - 2;
+			// If our value is less that the minimum throttle we can do, just make it the min.
+			if($throttleVal < 1) {
+				$throttleVal = 1;
+			}
+			
+			return $throttleVal;
+
+		}
+
+		// Get the throttle setting for this backup in Mbps
+		// We store it in the database this way, so simply retrieving from getInfo is enough.
+		function getMbpsThrottleValue() {
+
+			// Validate this...
+			if(!is_numeric($this->id)) {
+				throw new Exception('scheduledBackup->getMbpsThrottleValue: '."Error: The ID for this object is not an integer.");
+			}
+
+			// Get info
+			$info = $this->getInfo();
+
+			// Return the throttle setting in Mbps
+			return $info['throttle'];
+			
+		}
+
 
 	} // Class: scheduledBackup
 

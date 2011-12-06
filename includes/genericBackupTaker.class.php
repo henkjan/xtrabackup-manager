@@ -112,7 +112,20 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$ncServer = $ncBuilder->getServerCommand($rbInfo['port']);
 	
 					// Set the command we plan to run
-					$ncCommand = ' cd '.$path.' ; '.$ncServer.' | tar xvif - 2>&1 > /dev/null';
+					$ncCommand = ' cd '.$path.' ; '.$ncServer;
+
+					// Add the throttle if enabled
+					
+					if($sbInfo['throttle'] > 0) {
+
+						system('pv -V > /dev/null 2>&1', $pvReturn);
+						if($pvReturn <> 0 ) {
+							throw new Exception('genericBackupTaker->takeFullBackupSnapshot: '."Error: Throttling is enabled, but could not find pv command in the path.");
+						}
+						$ncCommand .= " | pv -q -L".$scheduledBackup->getMbpsThrottleValue()."m ";
+					}
+
+					$ncCommand .= ' | tar xvif - > /dev/null 2>&1';
 			
 					// Open the process with a stream to read from it
 					$ncProc = popen($ncCommand,'r');
@@ -154,6 +167,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						$xbCommand .= " --no-lock ";
 					}
 		
+
 					$ncClient = $ncBuilder->getClientCommand($config['SYSTEM']['xbm_hostname'], $rbInfo['port']);
 					$xbCommand .= " | ".$ncClient.
 								' ; exit ${PIPESTATUS[0]}\''; // Makes sure the command run on the remote machine returns the exit status of innobackupex, which is what SSH will return
@@ -388,7 +402,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					// Command should look like this:
 					$xbCommand = "ssh -o StrictHostKeyChecking=no ".$sbInfo['backup_user']."@".$hostInfo['hostname']." 'innobackupex --ibbackup=".$xbBinary." --slave-info --incremental-lsn=".$lsn." ".$tempDir."/deltas".
 								" --user=".$sbInfo['mysql_user']." --safe-slave-backup ".
-                                " --password=".$sbInfo['mysql_password']." --no-timestamp --incremental 1>&2 '";
+                                " --password=".$sbInfo['mysql_password']." --no-timestamp --incremental --throttle=".$scheduledBackup->getXtraBackupThrottleValue()." 1>&2 '";
 					
 					// Set up how we'll interact with the IO file handlers of the process
 					$xbDescriptors = Array(
@@ -460,7 +474,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$ncBuilder = new netcatCommandBuilder();
 					$ncServer = $ncBuilder->getServerCommand($rbInfo['port']);
 
-					$ncCommand = ' cd '.$path.' ; '.$ncServer.' | tar xvif - 2>&1 > /dev/null';
+					$ncCommand = ' cd '.$path.' ; '.$ncServer.' | tar xvf - > /dev/null 2>&1';
 		
 					// Open the process with a stream to read from it
 					$ncProc = popen($ncCommand,'r');

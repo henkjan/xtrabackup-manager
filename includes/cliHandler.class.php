@@ -699,6 +699,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						echo("  MySQL User: ".$sbInfo['mysql_user']."  Lock Tables: ".$sbInfo['lock_tables']."\n");
 						echo("  Backup Volume: ".$volInfo['name']." ( ".$volInfo['path']." )\n");
 						echo("  Backup Strategy: ".$stratInfo['strategy_name']." ( ".$stratInfo['strategy_code']." )\n");
+						if($sbInfo['throttle'] == 0 ) {
+							echo("  Throttle: Disabled (0)\n");
+						} else {
+							echo("  Throttle: Enabled (".$sbInfo['throttle']." MB/sec)\n");
+						}
 						echo("  Backup Strategy Params:\n");
 						$params = $scheduledBackup->getParameters();
 						foreach($params as $param => $value) {
@@ -730,6 +735,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						$errMsg .= "	mysql_password - The MySQL password for the above\n";
 						$errMsg .= "	lock_tables - Whether FLUSH TABLES WITH READ LOCK should be used for MyISAM consistency (Y/N)\n";
 						$errMsg .= "	active - Whether this Scheduled Backup task is activated and should run (Y/N)\n";
+						$errMsg .= "	throttle - How many MB/sec to throttle this backup to (0 to disable throttling)\n";
 						$errMsg .= "\n";
 						$errMsg .= "  Backup Strategy Parameters:\n\n";
 						$errMsg .= "	FULLONLY:\n";

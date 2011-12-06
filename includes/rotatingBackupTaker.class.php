@@ -139,7 +139,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			// validate maintain_materialized_copy (if set)
 			if(isSet($sbParams['maintain_materialized_copy']) ) {
-				scheduledBackup::validateMaintainMaterializedCopy($sbParams['max_snapshot_groups']);
+				scheduledBackup::validateMaintainMaterializedCopy($sbParams['maintain_materialized_copy']);
 			}
 
 			//
