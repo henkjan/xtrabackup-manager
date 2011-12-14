@@ -309,7 +309,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				} catch (Exception $e) {
 					// Remove files and make status failed
 					if($config['SYSTEM']['cleanup_on_failure'] == true ) {
-						$this->infolog->write("Cleaning up files after failure...");
+						$this->infolog->write("Cleaning up files after failure...", XBM_LOG_INFO);
 						$snapshot->deleteFiles();
 					} else {
 						$this->infolog->write("Skipping cleanup as cleanup_on_failure is turned off...", XBM_LOG_INFO);
@@ -563,7 +563,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				} catch (Exception $e) {
 					// Remove the snapshot files and mark it as failed.
 					if($config['SYSTEM']['cleanup_on_failure'] == true ) {
-						$this->infolog->write("Cleaning up files after failure...");
+						$this->infolog->write("Cleaning up files after failure...", XBM_LOG_INFO);
 						$snapshot->deleteFiles();
 					} else {
 						$this->infolog->write("Skipping cleanup as cleanup_on_failure is turned off...", XBM_LOG_INFO);

@@ -358,7 +358,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						$scheduledBackupGetter = new scheduledBackupGetter();
 						$scheduledBackupGetter->setLogStream($this->log);
 
-						if( ! ($scheduledBackup = $scheduledBackupGetter->getByHostAndName($hostname, $backupName) ) ) {
+						if( ! ($scheduledBackup = $scheduledBackupGetter->getByHostnameAndName($hostname, $backupName) ) ) {
 							throw new ProcessingException("Error: Could not find a Scheduled Backup Task for host: $hostname with name: $backupName");
 						}
 
