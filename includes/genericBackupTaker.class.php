@@ -128,26 +128,19 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$ncCommand .= ' | tar xvif - > /dev/null 2>&1';
 			
 					// Open the process with a stream to read from it
-					$ncProc = popen($ncCommand,'r');
+
+					// Set up how we'll interact with the IO file handlers of the process
+					$ncDescriptors = Array(
+										0 => Array('file', '/dev/null', 'r'), // Process will read from /dev/null
+										1 => Array('pipe', 'w'), // Process will write to STDOUT a pipe 
+										2 => Array('pipe', 'w')  // Process will write to STDERR a pipe 
+									);
+
+					// Open the netcat listener proc
+					$ncProc = proc_open($ncCommand, $ncDescriptors, $ncPipes);
+
 					if(!is_resource($ncProc) ) {
 						throw new Exception('genericBackupTaker->takeFullBackupSnapshot: '."Error: Unable to start netcat with command: $ncCommand .");
-					}
-			
-					// Set the stream so we can read from it without blocking (return if there is no data!)
-					stream_set_blocking($ncProc, 0);
-			
-					// Sleep for one second before we check to see if netcat returned anything problems wise...
-					sleep(1);
-			
-					// Read from stream and check to see if we have any output at all...
-					$ncOutput = fgets($ncProc);
-			
-					if(strlen($ncOutput) > 0 ) {
-						// If we got output, read it all into ncOutput and throw an error
-						while(!feof($ncProc) ) {
-							$ncOutput .= "\n".fgets($ncProc);
-						}
-						throw new Exception('genericBackupTaker->takeFullBackupSnapshot: '."Error: Unable to start netcat with command: $ncCommand . Got error output: $ncOutput .");
 					}
 			
 					// Info output
@@ -233,8 +226,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					// Close out backup process (it should be killed already)
 					proc_close($xbProc);
 			
-					// Wait for netcat to stop 
-					pclose($ncProc);	
+					// Close out the netcat process
+					proc_close($ncProc);	
 			
 			
 					$this->infolog->write("XtraBackup step completed OK. Proceeding with apply-log step...", XBM_LOG_INFO);
@@ -307,6 +300,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$this->infolog->write("Backup completed successfully!", XBM_LOG_INFO);
 	
 				} catch (Exception $e) {
+
+					// If we had a netcat process, check to see if we need to kill it/clean up
+					if(isSet($ncProc) && is_resource($ncProc) ) {
+						proc_terminate($ncProc);
+					}
+
 					// Remove files and make status failed
 					if($config['SYSTEM']['cleanup_on_failure'] == true ) {
 						$this->infolog->write("Cleaning up files after failure...", XBM_LOG_INFO);
@@ -402,7 +401,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					// Command should look like this:
 					$xbCommand = "ssh -o StrictHostKeyChecking=no ".$sbInfo['backup_user']."@".$hostInfo['hostname']." 'innobackupex --ibbackup=".$xbBinary." --slave-info --incremental-lsn=".$lsn." ".$tempDir."/deltas".
 								" --user=".$sbInfo['mysql_user']." --safe-slave-backup ".
-                                " --password=".$sbInfo['mysql_password']." --no-timestamp --incremental --throttle=".$scheduledBackup->getXtraBackupThrottleValue()." 1>&2 '";
+								" --password=".$sbInfo['mysql_password']." --no-timestamp --incremental --throttle=".$scheduledBackup->getXtraBackupThrottleValue()." 1>&2 '";
 					
 					// Set up how we'll interact with the IO file handlers of the process
 					$xbDescriptors = Array(
@@ -475,30 +474,23 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$ncServer = $ncBuilder->getServerCommand($rbInfo['port']);
 
 					$ncCommand = ' cd '.$path.' ; '.$ncServer.' | tar xvf - > /dev/null 2>&1';
-		
+	
 					// Open the process with a stream to read from it
-					$ncProc = popen($ncCommand,'r');
+
+					// Set up how we'll interact with the IO file handlers of the process
+					$ncDescriptors = Array(
+										0 => Array('file', '/dev/null', 'r'), // Process will read from /dev/null
+										1 => Array('pipe', 'w'), // Process will write to STDOUT a pipe 
+										2 => Array('pipe', 'w')  // Process will write to STDERR a pipe 
+									);
+
+					// Open the netcat listener proc
+					$ncProc = proc_open($ncCommand, $ncDescriptors, $ncPipes);
+
 					if(!is_resource($ncProc) ) {
 						throw new Exception('genericBackupTaker->takeIncrementalBackupSnapshot: '."Error: Unable to start netcat with command: $ncCommand .");
 					}
-		
-					// Set the stream so we can read from it without blocking (return if there is no data!)
-					stream_set_blocking($ncProc, 0);
-
-					// Sleep for one second before we check to see if netcat returned anything problems wise...
-					sleep(1);
-		
-					// Read from stream and check to see if we have any output at all...
-					$ncOutput = fgets($ncProc);
-		
-					if(strlen($ncOutput) > 0 ) {
-						// If we got output, read it all into ncOutput and throw an error
-						while(!feof($ncProc) ) {
-							$ncOutput .= "\n".fgets($ncProc);
-						}
-						throw new Exception('genericBackupTaker->takeIncrementalBackupSnapshot: '."Error: Unable to start netcat with command: $ncCommand . Got error output: $ncOutput .");
-					}
-		
+	
 					// Info output
 					$this->infolog->write("Started Netcat (nc) listener on port ".$rbInfo['port']." to receive backup tar stream into directory $path ...", XBM_LOG_INFO);
 		
@@ -551,6 +543,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					echo "\nWe got STDERR: \n";
 					echo stream_get_contents($copyPipes[2]); 
 					*/
+
+					// Close out the copy and netcat processes
+					proc_close($copyProc);
+					proc_close($ncProc);
 		
 					// Set the snapshot time to be now
 					$snapshot->setSnapshotTime(date('Y-m-d H:i:s'));
@@ -561,6 +557,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$this->infolog->write("Completed copying the backup via netcat with the following output:\n".$streamContents, XBM_LOG_INFO);
 
 				} catch (Exception $e) {
+
+					// If we had a netcat process, check to see if we need to kill it/clean up
+					if(isSet($ncProc) && is_resource($ncProc) ) {
+						proc_terminate($ncProc);
+					}
+
 					// Remove the snapshot files and mark it as failed.
 					if($config['SYSTEM']['cleanup_on_failure'] == true ) {
 						$this->infolog->write("Cleaning up files after failure...", XBM_LOG_INFO);
