@@ -112,6 +112,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$ncServer = $ncBuilder->getServerCommand($rbInfo['port']);
 	
 					// Set the command we plan to run
+					$ncLogfile = $config['LOGS']['logdir'].'/hosts/'.$hostInfo['hostname'].'.netcat.log';
 					$ncCommand = ' cd '.$path.' ; '.$ncServer;
 
 					// Add the throttle if enabled
@@ -125,7 +126,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						$ncCommand .= " | pv -q -L".$scheduledBackup->getMbpsThrottleValue()."m ";
 					}
 
-					$ncCommand .= ' | tar xvif - > /dev/null 2>&1';
+					$ncCommand .= ' | tar xvif - >> '.$ncLogfile.' 2>&1';
 			
 					// Open the process with a stream to read from it
 
@@ -473,7 +474,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$ncBuilder = new netcatCommandBuilder();
 					$ncServer = $ncBuilder->getServerCommand($rbInfo['port']);
 
-					$ncCommand = ' cd '.$path.' ; '.$ncServer.' | tar xvf - > /dev/null 2>&1';
+					$ncLogfile = $config['LOGS']['logdir'].'/hosts/'.$hostInfo['hostname'].'.netcat.log';
+					$ncCommand = ' cd '.$path.' ; '.$ncServer.' | tar xvf - >> '.$ncLogfile.' 2>&1';
 	
 					// Open the process with a stream to read from it
 
