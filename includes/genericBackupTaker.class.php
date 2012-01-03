@@ -132,7 +132,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 					// Set up how we'll interact with the IO file handlers of the process
 					$ncDescriptors = Array(
-										0 => Array('file', '/dev/null', 'r'), // Process will read from /dev/null
+										0 => Array('pipe', 'r'), // Process will read from a pipe
 										1 => Array('pipe', 'w'), // Process will write to STDOUT a pipe 
 										2 => Array('pipe', 'w')  // Process will write to STDERR a pipe 
 									);
@@ -481,7 +481,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 					// Set up how we'll interact with the IO file handlers of the process
 					$ncDescriptors = Array(
-										0 => Array('file', '/dev/null', 'r'), // Process will read from /dev/null
+										0 => Array('pipe', 'r'), // Process will read from a pipe
 										1 => Array('pipe', 'w'), // Process will write to STDOUT a pipe 
 										2 => Array('pipe', 'w')  // Process will write to STDERR a pipe 
 									);
