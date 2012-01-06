@@ -1289,7 +1289,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$checkCommand = 'nc -h 2>&1 |head -3|tail -1|grep "listen for inbound"|grep -c "nc -l -p port"';
 					$needsDashP = system($checkCommand, $returnVar);
 
-					if($returnVar != 0 ) {
+					if($returnVar != 0  && $returnVar != 1 ) {
 						throw new Exception('netcatCommandBuilder->getServerCommand: '."Error: An error occurred while attempting to detect the netcat variant installed on this system. ".
 									"The process returned code ".$returnVar." when issuing the command: ".$checkCommand."\n");
 					}
