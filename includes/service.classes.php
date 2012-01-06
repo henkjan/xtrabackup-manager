@@ -1,7 +1,7 @@
 <?php
 /*
 
-Copyright 2011 Marin Software
+Copyright 2011-2012 Marin Software
 
 This file is part of XtraBackup Manager.
 
@@ -649,10 +649,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				foreach( $scheduledBackups as $scheduledBackup ) {
 					// Get info for the scheduled backup ..
 					$scheduledBackupInfo = $scheduledBackup->getInfo();
+					$host = $scheduledBackup->getHost();
+					$hostInfo = $host->getInfo();
 
 					if( $scheduledBackupInfo['active'] == 'Y' ) {
 						$cron .= "\n# Backup: ".$scheduledBackupInfo['name']."\n";
-						$cron .= $scheduledBackupInfo['cron_expression'].' '.$XBM_AUTO_INSTALLDIR.'xbm-backup -s '.$scheduledBackupInfo['scheduled_backup_id']." -q\n";
+						$cron .= $scheduledBackupInfo['cron_expression'].' '.$XBM_AUTO_INSTALLDIR.'xbm backup run '.$hostInfo['hostname'].' '.$scheduledBackupInfo['name']." quiet\n";
 					} else {
 						continue;
 					}
@@ -1073,9 +1075,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 		// Create the tmpdir remotely and return the path information
-		function init($host, $user, $dir, $prefix='') {
+		function init($host, $port, $user, $dir, $prefix='') {
 
 			$this->host = $host;
+			$this->port = $port;
 			$this->user = $user;
 			$this->prefix = $prefix;
 
@@ -1085,7 +1088,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			do
 			{
 				$path = $dir.$prefix.mt_rand(0, 9999999);
-				$cmd = 'ssh -o StrictHostKeyChecking=no '.$user.'@'.$host." 'mkdir $path' 2>&1";
+				$cmd = 'ssh -o StrictHostKeyChecking=no -p '.$port.' '.$user.'@'.$host." 'mkdir $path' 2>&1";
 				@exec($cmd, $output, $returnVar);
 				$c++;
 			} while ( ( $returnVar != 0 ) && $c < 5 );
@@ -1117,7 +1120,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 
-			$cmd = 'ssh -o StrictHostKeyChecking=no '.$this->user.'@'.$this->host." 'rm -rf ".$this->dir."' 2>&1";
+			$cmd = 'ssh -o StrictHostKeyChecking=no -p '.$this->port.' '.$this->user.'@'.$this->host." 'rm -rf ".$this->dir."' 2>&1";
 			@exec($cmd, $output, $returnVar);
 
 			if( $returnVar != 0 ) {

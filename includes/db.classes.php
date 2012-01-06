@@ -1,7 +1,7 @@
 <?php
 /*
 
-Copyright 2011 Marin Software
+Copyright 2011-2012 Marin Software
 
 This file is part of XtraBackup Manager.
 
@@ -23,6 +23,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
  	/* classes related to DB conections */
 
 	class dbConnectionGetter {
+
+		function __construct($checkVersion = true) {
+			$this->checkVersion = $checkVersion;
+		}
 
 
 		// Return a new dbConnection connection object to use to connect to the DB
@@ -59,6 +63,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			$conn->setLogStream($logStream);
+
+			// If this db connection getter is configged to check the version (default is to do so), then check it.
+			if($this->checkVersion) {
+				$conn->checkSchemaVersion();
+			}
 
 			return $conn;
 
@@ -111,6 +120,33 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			return $res;
 
 		}
+
+		// Get the schema version of the database
+		function getSchemaVersion() {
+
+			$sql = "SELECT MAX(version) as version FROM schema_version";
+
+			if( ! ( $res = $this->query($sql) ) ) {
+				throw new Exception('dbConnetion->getSchemaVersion: '."Error: Query: $sql \nFailed with MySQL Error: $this->error");
+			}
+
+			if( ! ( $row = $res->fetch_array() ) ) {
+				throw new Exception('dbConnection->getSchemaVersion: '."Error: Could not find any information in schema_version table. Please ensure the database is correctly initialized.");
+			}
+			return $row['version'];
+
+		}
+
+		// Check the schema version of the DB is XBM_SCHEMA_VERSION
+		function checkSchemaVersion() {
+
+			if( $this->getSchemaVersion() != XBM_SCHEMA_VERSION ) {
+				throw new Exception("Error: Found an incompatible database schema version: ".$row['version']." required version: ".XBM_SCHEMA_VERSION." -- Try running 'xbm upgrade'");
+			}
+
+			return true;
+		}
+
 	}
 
 ?>

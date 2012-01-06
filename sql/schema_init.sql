@@ -119,6 +119,7 @@ CREATE TABLE `hosts` (
   `description` varchar(256) character set utf8 NOT NULL default '',
   `active` enum('Y','N') default 'Y',
   `staging_path` varchar(1024) character set utf8 NOT NULL default '/tmp',
+  `ssh_port` smallint unsigned not null default 22,
   PRIMARY KEY  (`host_id`),
   UNIQUE KEY `i_hostname` (`hostname`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -266,7 +267,7 @@ SET character_set_client = @saved_cs_client;
 
 LOCK TABLES `schema_version` WRITE;
 /*!40000 ALTER TABLE `schema_version` DISABLE KEYS */;
-INSERT INTO `schema_version` VALUES (1000);
+INSERT INTO `schema_version` VALUES (1001);
 /*!40000 ALTER TABLE `schema_version` ENABLE KEYS */;
 UNLOCK TABLES;
 

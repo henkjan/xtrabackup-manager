@@ -1,7 +1,7 @@
 <?php
 /*
 
-Copyright 2011 Marin Software
+Copyright 2011-2012 Marin Software
 
 This file is part of XtraBackup Manager.
 
@@ -215,7 +215,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			$this->remoteTempDir = new remoteTempDir();
 
-			$tempDir = $this->remoteTempDir->init($hostInfo['hostname'], $sbInfo['backup_user'], $hostInfo['staging_path'], 'xbm-');
+			$tempDir = $this->remoteTempDir->init($hostInfo['hostname'], $hostInfo['ssh_port'], $sbInfo['backup_user'], $hostInfo['staging_path'], 'xbm-');
 
 			// Put the path into the DB
 

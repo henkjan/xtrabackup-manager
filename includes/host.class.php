@@ -1,7 +1,7 @@
 <?php
 /*
 
-Copyright 2011 Marin Software
+Copyright 2011-2012 Marin Software
 
 This file is part of XtraBackup Manager.
 
@@ -161,6 +161,19 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			return;
 		}
 
+		public static function validateSSHPort($port) {
+
+			if(!isSet($port)) {
+				throw new InputException("Error: Expected an SSH Port number as input, but did not get one.");
+			}
+
+			if(!is_numeric($port) || $port < 1 || $port > 65535 ) {
+				throw new InputException("Error: SSH Port must be a number between 1 and 65535.");
+			}
+
+			return;
+		}
+
 
 		// Delete the host - if it has nothing attached to it
 		function delete() {
@@ -288,6 +301,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				case 'description':
 					self::validateHostDescription($value);
 					$sql = "UPDATE hosts SET description='".$conn->real_escape_string($value)."' WHERE host_id=".$this->id;
+				break;
+
+				case 'ssh_port':
+					self::validateSSHPort($value);
+					$sql = "UPDATE hosts SET ssh_port=".$value." WHERE host_id=".$this->id;
 				break;
 
 				case 'active':

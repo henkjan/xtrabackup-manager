@@ -1,7 +1,7 @@
 <?php
 /*
 
-Copyright 2011 Marin Software
+Copyright 2011-2012 Marin Software
 
 This file is part of XtraBackup Manager.
 
@@ -21,13 +21,15 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 */
 	
 	// Setup global defines that do not depend on anything else
-	define('XBM_RELEASE_VERSION', 'XtraBackup Manager v0.7 - Copyright 2011 Marin Software');
+	define('XBM_RELEASE_VERSION', 'XtraBackup Manager v0.8 - Copyright 2011-2012 Marin Software');
 
 	// Log levels, lower is more verbose
 	define('XBM_LOG_DEBUG', 0);
 	define('XBM_LOG_INFO', 1);
 	define('XBM_LOG_ERROR', 2);
 
+	// Define the required schema verions
+	define('XBM_SCHEMA_VERSION', 1001);
 
 	// Number of seconds we sleep between checking stuff
 	// Usually to see if we can run the backup 
@@ -41,6 +43,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	} else {
 		$XBM_AUTO_HOSTNAME = trim(`hostname`);
 	}
+
+	$XBM_AUTO_TIMEZONE = date_default_timezone_get();
 
 	$XBM_AUTO_INSTALLDIR = dirname(dirname(__FILE__)) . '/';
 
@@ -67,11 +71,16 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	require('cliHandler.class.php');
 	require('exception.classes.php');
 	require('backupStrategy.class.php');
+	require('schemaUpgrader.class.php');
 
 	// Setup global defines that depend on other stuff
 	define('XBM_MAIN_LOG', $config['LOGS']['logdir'].'/xbm.log');
 
 	// Define list of valid backup strategy codes
 	define('XBM_VALID_STRATEGY_CODES', "CONTINC,FULLONLY,ROTATING");
+
+	// Set the timezone that should be used
+	date_default_timezone_set($config['SYSTEM']['timezone']);
+
 
 ?>

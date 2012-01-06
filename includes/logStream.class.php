@@ -1,7 +1,7 @@
 <?php
 /*
 
-Copyright 2011 Marin Software
+Copyright 2011-2012 Marin Software
 
 This file is part of XtraBackup Manager.
 
@@ -55,7 +55,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 			// Write
-			$toWrite = date('Y-m-d H:i:s'). " [".$this->levelNames[$level]."] : [ ".$msg." ]\n";
+			$toWrite = date('Y-m-d H:i:s O'). " [".$this->levelNames[$level]."] : [ ".$msg." ]\n";
 
 			if($this->filename !== false) {
 				if( ! fwrite($this->fp, $toWrite) ) {

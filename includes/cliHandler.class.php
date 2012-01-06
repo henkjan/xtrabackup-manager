@@ -1,7 +1,7 @@
 <?php
 /*
 
-Copyright 2011 Marin Software
+Copyright 2011-2012 Marin Software
 
 This file is part of XtraBackup Manager.
 
@@ -42,6 +42,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			echo("backup [add|list|edit|info|delete|run] <args>\t -- Manage Scheduled Backup Tasks\n");
 
 			echo("snapshot [list|restore|restore-latest] <args>\t -- Manage Backup Snapshots\n");
+
+			echo("upgrade\t\t\t\t\t\t -- Upgrade the XtraBackup Manager database schema\n");
 
 			echo("\n");
 			echo("You may specify only a context, or a context and action to get help on its relevant arguments.\n");
@@ -102,6 +104,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				case 'snapshots':
 					$this->printHeader();
 					$this->handleSnapshotActions($args);
+				break;
+
+				// Call the upgrade context handler
+				case 'upgrade':
+					$this->printHeader();
+					$this->handleUpgradeAction();
 				break;
 
 				// Handle unknown action context
@@ -443,8 +451,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 					} else {
 							throw new InputException("Error: Not all required parameters for the restore action were given.\n\n"
-									."  Syntax:\n\n	xbm ".$args[1]." restore <snapshot_id|latest> <target_path>\n\n"
-									."  Example:\n\n	xbm ".$args[1]." restore latest /restores/myrestore\n\n");
+									."  Syntax:\n\n	xbm ".$args[1]." restore <snapshot_idt> <target_path>\n\n"
+									."  Example:\n\n	xbm ".$args[1]." restore m21 /restores/myrestore\n\n");
 					}
 
 				break;
@@ -993,7 +1001,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					foreach($hosts as $host) {
 						$hostInfo = $host->getInfo();
 						echo("Hostname: ".$hostInfo['hostname']."  Description: ".$hostInfo['description']."\n");
-						echo("Active: ".$hostInfo['active']."  Staging_path: ".$hostInfo['staging_path']."\n\n");
+						echo("Active: ".$hostInfo['active']."  Staging_path: ".$hostInfo['staging_path']."  SSH Port: ".$hostInfo['ssh_port']."\n\n");
 					}
 
 					if(sizeOf($hosts) == 0 ) {
@@ -1012,6 +1020,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						$errMsg .= "	hostname - The hostname of the Host - May only be edited if no Scheduled Backups are configured for the host.\n";
 						$errMsg .= "	description - The description of the Host - Can be edited at any time.\n";
 						$errMsg .= "	staging_path - The temporary dir to use on the host for staging incremental backups - Can be edited at any time.\n";
+						$errMsg .= "	ssh_port - The SSH port number to use to connect to the remote host - Can be edited at any time.\n";
 						$errMsg .= "	active - Whether or the Host is active Y or N - Can be edited at any time.\n\n";
 						$errMsg .= "  Example:\n\n	xbm ".$args[1].' edit db01.mydomain.com staging_path /storage1/backuptmp';
 
@@ -1193,6 +1202,23 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$this->printVolumeHelpText($args);
 
 				break;
+			}
+
+
+			return;
+
+		}
+
+		// Handler for upgrading the xbm database
+		function handleUpgradeAction() {
+
+			$schemaUpgrader = new schemaUpgrader();
+			$schemaUpgrader->setLogStream($this->log);
+
+			if($schemaUpgrader->upgrade()) {
+				die("Success: ".$schemaUpgrader->resultMsg."\n\n");
+			} else {
+				die("Failure: ".$schemaUpgrader->resultMsg."\n\n");
 			}
 
 

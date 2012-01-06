@@ -1,7 +1,7 @@
 <?php
 /*
 
-Copyright 2011 Marin Software
+Copyright 2011-2012 Marin Software
 
 This file is part of XtraBackup Manager.
 
@@ -28,12 +28,15 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 	// The tmpdir to use -- usually for just generating temporary crontab files.
 	$config['SYSTEM']['tmpdir'] = '/tmp';
+
+	// Change this if you want to override the autodetected system timezone (sometimes inaccurate).
+	$config['SYSTEM']['timezone'] = $XBM_AUTO_TIMEZONE;
 	
 	// Where the logs should be stored
 	$config['LOGS']['logdir'] = $XBM_AUTO_INSTALLDIR . '/logs';
 
-	// What log level should we use - DEBUG or NORMAL
-	$config['LOGS']['level'] = 'DEBUG';
+	// What log level should we use - DEBUG, INFO, ERROR
+	$config['LOGS']['level'] = 'INFO';
 
 	// The port range made available for use by XBM with netcat - 
 	// these ports need to be openable on the backup hsot
