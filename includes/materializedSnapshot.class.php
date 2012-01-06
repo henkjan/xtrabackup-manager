@@ -229,10 +229,6 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			$this->setStatus('DELETING');
 
-			// Get the snapshot it points to
-			$snapshot = $this->getBackupSnapshot();
-			$snapInfo = $snapshot->getInfo();
-
 			// Get the path
 			$path = $this->getPath();
 

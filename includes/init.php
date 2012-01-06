@@ -46,7 +46,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 	$XBM_AUTO_TIMEZONE = date_default_timezone_get();
 
-	$XBM_AUTO_INSTALLDIR = dirname(dirname(__FILE__)) . '/';
+	$XBM_AUTO_INSTALLDIR = dirname(dirname(__FILE__));
 
 	// Include config and class / function files
 	require('config.php');

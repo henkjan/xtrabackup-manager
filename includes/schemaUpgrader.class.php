@@ -59,7 +59,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 					// Find all the files in the $XBM_AUTO_INSTALLDIR/sql/changes/ directory
 					global $XBM_AUTO_INSTALLDIR;
-					$files = glob($XBM_AUTO_INSTALLDIR.'sql/changes/*');
+					$files = glob($XBM_AUTO_INSTALLDIR.'/sql/changes/*');
 					// Sort them just in case the OS gives them back in a strange order
 					asort($files);
 

@@ -504,7 +504,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			echo("  To the following target path: $path\n\n");
 			// Confirm action...
-			$input = readline("Are you sure? - Please type 'YES' to confirm: ");
+			$inputReader = new inputReader();
+			$input = $inputReader->readline("Are you sure? - Please type 'YES' to confirm: ");
+
 			if($input != 'YES') {
 				echo("No 'YES' confirmation received, exiting...\n\n");
 			} else {
@@ -813,7 +815,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						if($snapCount > 0 ) {
 							echo("\nThe Scheduled Backup Task for host: $hostname with name: $backupName has $snapCount backup snapshots associated with it.\n\n");
 							echo("If you delete this Scheduled Backup Task, all associated backup snapshots will be removed -- this cannot be undone.\n\n");
-							$input = readline("Are you sure? - Please type 'YES' to confirm: ");
+							$inputReader = new inputReader();
+							$input = $inputReader->readline("Are you sure? - Please type 'YES' to confirm: ");
 							if($input != 'YES') {
 								echo("No 'YES' confirmation received, exiting...\n\n");
 							} else {

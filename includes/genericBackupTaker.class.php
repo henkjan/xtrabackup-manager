@@ -205,7 +205,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						if( ! ( $xbStatus = proc_get_status($xbProc) ) ) {
 							throw new Exception('genericBackupTaker->takeFullBackupSnapshot: '."Error: Unable to retrieve status on backup process.");
 						}
-						sleep(5);
+						sleep(1);
 			
 					} while ($xbStatus['running']);
 			
@@ -268,7 +268,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						if( ! ( $applyStatus = proc_get_status($applyProc) ) ) {
 							throw new Exception('genericBackupTaker->takeFullBackupSnapshot: '."Error: Unable to retrieve status on apply log process.");
 						}
-						sleep(5);
+						sleep(1);
 			
 					} while ($applyStatus['running']);
 			
@@ -444,7 +444,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						if( ! ( $xbStatus = proc_get_status($xbProc) ) ) {
 							throw new Exception('genericBackupTaker->takeIncrementalBackupSnapshot: '."Error: Unable to retrieve status on backup process.");
 						}
-						sleep(5);
+						sleep(1);
 
 					} while ($xbStatus['running']);
 
@@ -528,7 +528,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						if( ! ( $copyStatus = proc_get_status($copyProc) ) ) {
 							throw new Exception('genericBackupTaker->takeIncrementalBackupSnapshot: '."Error: Unable to retrieve status on copy process.");
 						}
-						sleep(5);
+						sleep(1);
 	
 					} while ($copyStatus['running']);
 		

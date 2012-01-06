@@ -654,7 +654,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 					if( $scheduledBackupInfo['active'] == 'Y' ) {
 						$cron .= "\n# Backup: ".$scheduledBackupInfo['name']."\n";
-						$cron .= $scheduledBackupInfo['cron_expression'].' '.$XBM_AUTO_INSTALLDIR.'xbm backup run '.$hostInfo['hostname'].' '.$scheduledBackupInfo['name']." quiet\n";
+						$cron .= $scheduledBackupInfo['cron_expression'].' '.$XBM_AUTO_INSTALLDIR.'/xbm backup run '.$hostInfo['hostname'].' '.$scheduledBackupInfo['name']." quiet\n";
 					} else {
 						continue;
 					}
@@ -1285,7 +1285,22 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			switch( $systemType ) {
 				default:
 				case 'Linux':
-					return "nc -l $port";
+					// Check to see if this netcat variant needs -p for port. 
+					$checkCommand = 'nc -h 2>&1 |head -3|tail -1|grep "listen for inbound"|grep -c "nc -l -p port"';
+					$needsDashP = system($checkCommand, $returnVar);
+
+					if($returnVar != 0 ) {
+						throw new Exception('netcatCommandBuilder->getServerCommand: '."Error: An error occurred while attempting to detect the netcat variant installed on this system. ".
+									"The process returned code ".$returnVar." when issuing the command: ".$checkCommand."\n");
+					}
+
+					// Return appropriate listener command...
+					if($needsDashP == 1 ) {
+						return "nc -l -p $port";
+					} else {
+						return "nc -l $port";
+					}
+
 					break;
 
 				// Lets assume that ALL SunOS netcat needs nc -l -p PORT syntax
@@ -1574,4 +1589,19 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 		
 	}
+
+	// Little support class to provide readline functionality in systems where there is no readline built in.
+	class inputReader {
+
+		function readline($prompt="") {
+
+    		echo $prompt;
+
+			return rtrim(fgets(STDIN));
+
+
+		}
+
+	}
+
 ?>
