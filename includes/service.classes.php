@@ -1405,7 +1405,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				if( ! $conn->query($sql) ) {
 
 					// If somebody already has an entry for the very same queueName/entry_time by some fluke.. sleep & retry..
-					if($conn->errno == 1063 && stristr($conn->error, 'key 2')) {
+					if($conn->errno == 1062 && stristr($conn->error, 'key 2')) {
 
 						// Sleep only 1 second between retries in this case
 						// ... chance of collision is very low, and we want to try

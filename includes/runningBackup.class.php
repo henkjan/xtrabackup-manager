@@ -88,7 +88,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 					// This is hacky as it relies on the order of the keys, but basically...
 					// If we get a dupe key error on the port field, we'll try again, otherwise, consider it fatal.
-					if($conn->errno == 1063 && stristr($conn->error, 'key 2')) {
+					if($conn->errno == 1062 && stristr($conn->error, 'key 2')) {
 						// If log enabled - write info to it...
 						if($this->infolog !== false) 
 							$this->infolog->write("Attempted to lock port ".$portFinder->availablePort." by creating runningBackup, but somebody snatched it. Sleeping ".XBM_SLEEP_SECS." secs before retry...", XBM_LOG_INFO);
