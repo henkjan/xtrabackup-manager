@@ -649,11 +649,52 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				foreach( $scheduledBackups as $scheduledBackup ) {
 					// Get info for the scheduled backup ..
 					$scheduledBackupInfo = $scheduledBackup->getInfo();
+					$sbParams = $scheduledBackup->getParameters();
 					$host = $scheduledBackup->getHost();
 					$hostInfo = $host->getInfo();
 
 					if( $scheduledBackupInfo['active'] == 'Y' ) {
-						$cron .= "\n# Backup: ".$scheduledBackupInfo['name']."\n";
+
+						$cron .= "\n# Backup: ".$scheduledBackupInfo['name']." -- Strategy: ".$scheduledBackupInfo['strategy_code']."\n";
+
+						switch($scheduledBackupInfo['strategy_code']) {
+
+							case 'FULLONLY':
+								$cron .= "# Params Used: max_snapshots: ".$sbParams['max_snapshots']."\n";
+							break;
+
+							case 'CONTINC':
+								$cron .= "# Params Used: max_snapshots: ".$sbParams['max_snapshots']."  Materialized Backups: ".$sbParams['maintain_materialized_copy']."\n";
+							break;
+
+							case 'ROTATING':
+
+								if($sbParams['rotate_method'] == 'DAY_OF_WEEK') {
+
+									// This is kind of stupid but it was quicker than trying to coerce date functions to play nice.
+									$dayList = Array( 0 => 'Sunday', 1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday');
+
+									$rotateDays = explode(',',$sbParams['rotate_day_of_week']);
+
+									$cron .= "# Day of week rotation on day(s): ";;
+									foreach($rotateDays as $dayOfWeek) {
+										$cron .= $dayList[$dayOfWeek]."  ";
+									}
+									$cron .= "\n";
+
+								} elseif($sbParams['rotate_method'] == 'AFTER_SNAPSHOT_COUNT') {
+
+									$cron .= "# After snapshot count rotation after ".$sbParams['rotate_snapshot_no']."\n";
+
+								}
+
+								$cron .= "# Params Used: max_snapshot_groups: ".$sbParams['max_snapshot_groups']."  Materialized Backups: ".$sbParams['maintain_materialized_copy']."\n";
+							break;
+
+							default:
+							break;
+
+						}
 						$cron .= $scheduledBackupInfo['cron_expression'].' '.$XBM_AUTO_INSTALLDIR.'/xbm backup run '.$hostInfo['hostname'].' '.$scheduledBackupInfo['name']." quiet\n";
 					} else {
 						continue;
@@ -1595,7 +1636,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		function readline($prompt="") {
 
-    		echo $prompt;
+			echo $prompt;
 
 			return rtrim(fgets(STDIN));
 
