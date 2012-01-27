@@ -94,6 +94,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				// Create new object shell
 				$snapshot = new backupSnapshot();
+
+				$tempDir = $runningBackup->getStagingTmpdir();
 	
 				// Initialise the snapshot we're taking..
 				$snapshot->init($scheduledBackup, 'SEED', 'FULL', $snapshotGroup);
@@ -153,8 +155,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					// Proceed with running the backup
 			
 					// Build the command...
-					$xbCommand = 'ssh -o StrictHostKeyChecking=no -p '.$hostInfo['ssh_port'].' '.$sbInfo['backup_user'].'@'.$hostInfo['hostname']." 'innobackupex --ibbackup=".$xbBinary." --stream=tar ".$sbInfo['datadir_path']." --user=".$sbInfo['mysql_user'].
-								" --password=".$sbInfo['mysql_password']." --slave-info --safe-slave-backup";
+					$xbCommand = 'ssh -o StrictHostKeyChecking=no -p '.$hostInfo['ssh_port'].' '.$sbInfo['backup_user'].'@'.$hostInfo['hostname'].
+								" 'innobackupex --ibbackup=".$xbBinary." --stream=tar ".$sbInfo['datadir_path']." --user=".$sbInfo['mysql_user'].
+								" --password=".$sbInfo['mysql_password']." --slave-info --safe-slave-backup --tmpdir=".$tempDir;
 			
 					// If table locking for the backup is disabled add the --no-lock option to innobackupex
 					if($sbInfo['lock_tables'] == 'N') {
