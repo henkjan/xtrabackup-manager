@@ -34,6 +34,19 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		function upgrade() {
 
+			// Look for running backups without checking schema version
+			$runningBackupGetter = new runningBackupGetter();
+			$runningBackupGetter->setSchemaVersionChecks(false);
+
+			// Get the runningbackups - this getter automatically removes stale entries, so it should only return truly running pids...
+			$runningBackups = $runningBackupGetter->getAll();
+			$backupCount = sizeOf($runningBackups);
+
+			// If we find running backups, abort with error
+			if($backupCount > 0 ) {
+				throw new ProcessingException('schemaUpgrader->upgrade: '."Error: Detected ".$backupCount." backup(s) currently running. Please retry upgrading the schema later.");
+			}
+
 			// Create a new DB connection getter that does not check the schema version...
 			$dbGetter = new dbConnectionGetter(false);
 

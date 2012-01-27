@@ -841,6 +841,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	class runningBackupGetter {
 
 		function __construct() {
+			$this->checkSchemaVersion = true;
 			$this->log = false;
 		}
 
@@ -849,12 +850,16 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$this->log = $log;
 		}   
 
+		function setSchemaVersionChecks($checks = true) {
+			$this->checkSchemaVersion = $checks;
+		}
+
 		// Clean the list of running backups - remove entries for pids that are not running	
 		function cleanRunningBackups() {
 
 			global $config;
 
-			$dbGetter = new dbConnectionGetter();
+			$dbGetter = new dbConnectionGetter($this->checkSchemaVersion);
 
 			$conn = $dbGetter->getConnection($this->log);
 
@@ -891,7 +896,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			// Clean the list before we return it
 			$this->cleanRunningBackups();
 			
-			$dbGetter = new dbConnectionGetter();
+			$dbGetter = new dbConnectionGetter($this->checkSchemaVersion);
 			
 
 			$conn = $dbGetter->getConnection($this->log);
@@ -927,7 +932,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('runningBackupGetter->getByHost: '."Error: The ID for the given host object is not an integer.");
 			}
 
-			$dbGetter = new dbConnectionGetter($config);
+			$dbGetter = new dbConnectionGetter($this->checkSchemaVersion);
 			$conn = $dbGetter->getConnection($this->log);
 
 			$sql = "SELECT running_backup_id FROM running_backups WHERE host_id=".$host->id;
@@ -959,7 +964,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('runningBackupGetter->getByScheduledBackup: '."Error: The ID for the given scheduledBackup object is not an integer.");
 			}
 
-			$dbGetter = new dbConnectionGetter($config);
+			$dbGetter = new dbConnectionGetter($this->checkSchemaVersion);
 			$conn = $dbGetter->getConnection($this->log);
 
 			$sql = "SELECT running_backup_id FROM running_backups WHERE scheduled_backup_id=".$scheduledBackup->id;
@@ -1272,6 +1277,23 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			// Actually kick off the process to do it here...
+
+	
+			// Attempt to create some temp dirs to work around XtraBackup Bug #837143
+			// https://bugs.launchpad.net/percona-xtrabackup/+bug/837143
+			if( !is_dir($seedPath.'/tmp') ) {
+				if( ! mkdir($seedPath.'/tmp', 0770, true) ) {
+					throw new Exception('genericBackupTaker->takeFullBackupSnapshot: '."Error: Unable to create dir './tmp' in backup dir for apply log process to utilize.");
+				}
+			}
+
+			if( !is_dir($seedPath.'/mysqldb/tmp') ) {
+				if( ! mkdir($seedPath.'/mysqldb/tmp', 0770, true) ) {
+					throw new Exception('genericBackupTaker->takeFullBackupSnapshot: '."Error: Unable to create dir './mysqldb/tmp' in backup dir for apply log process to utilize.");
+				}
+			}
+
+
 			$mergeCommand = 'innobackupex --defaults-file='.$seedPath.'/backup-my.cnf --ibbackup='.$xbBinary.' --use-memory='.$config['SYSTEM']['xtrabackup_use_memory'].
 										' --apply-log --redo-only --incremental-dir='.$deltaPath.' '.$seedPath.' 1>&2';
 			
@@ -1435,7 +1457,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$dbGetter = new dbConnectionGetter();
 			$conn = $dbGetter->getConnection($this->log);
 
-			$sql = "INSERT INTO queue_tickets (queue_ticket_id, queue_name, entry_time, pid) VALUES (NULL, '".$conn->real_escape_string($queueName)."', NOW(), ".getmypid().")";
+			// Get current time in microseconds since unix epoch
+			$entryTimestamp = microtime(true) * 100;
+
+			$sql = "INSERT INTO queue_tickets (queue_ticket_id, queue_name, entry_timestamp, pid) VALUES (NULL, '".$conn->real_escape_string($queueName)."', ".$entryTimestamp.", ".getmypid().")";
 
 			$attempts = 0;
 
@@ -1443,15 +1468,15 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				$attempts++;
 
-				if( ! $conn->query($sql) ) {
+				if( ! ( $result = $conn->query($sql) ) ) {
 
-					// If somebody already has an entry for the very same queueName/entry_time by some fluke.. sleep & retry..
+					// If somebody already has an entry for the very same queueName/entry_timestamp by some fluke.. sleep & retry..
 					if($conn->errno == 1062 && stristr($conn->error, 'key 2')) {
 
-						// Sleep only 1 second between retries in this case
-						// ... chance of collision is very low, and we want to try
+						// Sleep between 1 100th of a second and 1 second between retries in this case
+						// ... chance of collision is higher for backups kicked off at the same second, but we want to try
 						// and take our rightful position in the queue before anyone else comes along.
-						sleep(1);
+						usleep(rand(10000,1000000));
 						continue;
 
 					// If the error was real, throw exception...
@@ -1464,6 +1489,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				}
 
 			} // end while
+
+			// If we got to here and our query result was not a success, then throw an exception...
+			if(!$result) {
+				throw new ProcessingException('queueManager->getTicketNumber: '."Error: Was unable to obtain a ticket in queue: ".$queueName." after ".$attempts." attempts.");
+			}
 
 			// return the ticket number
 			return $conn->insert_id;
@@ -1493,7 +1523,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('queueManager->checkFrontOfQueue: '."Error Could not find ticket number ".$ticketNumber." in queue with name: ".$queueName);
 			}
 
-			$sql = "SELECT queue_ticket_id FROM queue_tickets WHERE queue_name='".$conn->real_escape_string($queueName)."' ORDER BY entry_time ASC LIMIT 1";
+			$sql = "SELECT queue_ticket_id FROM queue_tickets WHERE queue_name='".$conn->real_escape_string($queueName)."' ORDER BY entry_timestamp ASC LIMIT 1";
 
 			if( ! ( $res = $conn->query($sql) ) ) {
 				throw new DBException('queueManager->checkFrontOfQueue: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
