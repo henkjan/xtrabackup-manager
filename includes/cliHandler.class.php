@@ -926,9 +926,6 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 								}
 							}
 
-							if( ! $quietMode ) {
-								print(basename(__FILE__).": ".$e->getMessage()."\nTrace:\n".$e->getTraceAsString()."\n");
-							}
 							die();
 						}
 

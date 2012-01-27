@@ -330,16 +330,14 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					}
 					$snapshot->setStatus('FAILED');
 					// Rethrow
-					throw new Exception($e->getMessage());
+					throw $e;
 				}	
 
 
 			} catch (Exception $e) {
-				// Write error to log
-				$this->infolog->write($e->getMessage(), XBM_LOG_ERROR);
 				// Clean up our runningBackup locks then rethrow..
 				$runningBackup->finish();
-				throw new Exception($e->getMessage());
+				throw $e;
 
 			}
 
@@ -589,15 +587,13 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					}
 					$snapshot->setStatus('FAILED');
 
-					throw new Exception($e->getMessage());
+					throw $e;
 				}
 		
 			} catch (Exception $e) {
-				// Write error to log
-				$this->infolog->write($e->getMessage(), XBM_LOG_ERROR);
 				// Clean up the running backup entry and rethrow error..
 				$runningBackup->finish();
-				throw new Exception($e->getMessage());
+				throw $e;
 			}
 	
 
