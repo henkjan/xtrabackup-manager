@@ -890,6 +890,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 							if($config['ALERTS']['enabled'] == true) {
 
 								try {
+									global $XBM_AUTO_HOSTNAME;
 
 									$host = $scheduledBackup->getHost();
 									$hostInfo = $host->getInfo();
@@ -898,9 +899,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 									$subj =  "XtraBackup Manager - ALERT - Backup Failure for ".$hostInfo['hostname'];
 
 									$msg =  "A fatal error occurred while attempting to run the following backup\n\n";
-									$msg .= "Host: ".$hostInfo['hostname']." - ".$hostInfo['description']."\n";
+									$msg .= "MySQL Backup Host: ".$hostInfo['hostname']." - ".$hostInfo['description']."\n";
+									$msg .= "XtraBackup Manager Host: ".$XBM_AUTO_HOSTNAME."\n";
 									$msg .= "Scheduled Backup: ".$sbInfo['name']."\n";
-									$msg .= "Exception details:\n".$e->getMessage();
+									$msg .= "Exception details:\n".$e->getMessage()."\n";
 									$msg .= "Trace:\n".$e->getTraceAsString()."\n\n";
 
 								} catch ( Exception $secondaryException ) {
@@ -908,10 +910,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 									$subj =  "XtraBackup Manager - ALERT - Backup Failure";
 
 									$msg =  "A fatal error occurred while attempting to run a backup:\n\n";
+									$msg .= "XtraBackup Manager Host: ".$XBM_AUTO_HOSTNAME."\n";
 									$msg .= "Exception details:\n".$e->getMessage();
 									$msg .= "Trace:\n".$e->getTraceAsString()."\n\n";
 									$msg .= "Additionally a further error occurred while attempting to collect information on the original exception:\n\n";
-									$msg .= "Exception details:\n".$secondaryException->getMessage();
+									$msg .= "Exception details:\n".$secondaryException->getMessage()."\n";
 									$msg .= "Trace:\n".$secondaryException->getTraceAsString()."\n\n";
 
 								}
