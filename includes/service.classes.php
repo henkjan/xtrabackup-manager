@@ -1350,8 +1350,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				case 'Linux':
 					// Check to see if this netcat variant needs -p for port. 
 					$checkCommand = 'nc -h 2>&1 |head -3|tail -1|grep "listen for inbound"|grep -c "nc -l -p port"';
-					$needsDashP = system($checkCommand, $returnVar);
-
+					$needsDashP = exec($checkCommand, $output, $returnVar);
 					if($returnVar != 0  && $returnVar != 1 ) {
 						throw new Exception('netcatCommandBuilder->getServerCommand: '."Error: An error occurred while attempting to detect the netcat variant installed on this system. ".
 									"The process returned code ".$returnVar." when issuing the command: ".$checkCommand."\n");
@@ -1457,43 +1456,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$dbGetter = new dbConnectionGetter();
 			$conn = $dbGetter->getConnection($this->log);
 
-			// Get current time in microseconds since unix epoch
-			$entryTimestamp = microtime(true) * 100;
+			$sql = "INSERT INTO queue_tickets (queue_ticket_id, queue_name, pid) VALUES (NULL, '".$conn->real_escape_string($queueName)."', ".getmypid().")";
 
-			$sql = "INSERT INTO queue_tickets (queue_ticket_id, queue_name, entry_timestamp, pid) VALUES (NULL, '".$conn->real_escape_string($queueName)."', ".$entryTimestamp.", ".getmypid().")";
-
-			$attempts = 0;
-
-			while ($attempts < 5 ) {
-
-				$attempts++;
-
-				if( ! ( $result = $conn->query($sql) ) ) {
-
-					// If somebody already has an entry for the very same queueName/entry_timestamp by some fluke.. sleep & retry..
-					if($conn->errno == 1062 && stristr($conn->error, 'key 2')) {
-
-						// Sleep between 1 100th of a second and 1 second between retries in this case
-						// ... chance of collision is higher for backups kicked off at the same second, but we want to try
-						// and take our rightful position in the queue before anyone else comes along.
-						usleep(rand(10000,1000000));
-						continue;
-
-					// If the error was real, throw exception...
-					} else {
-						throw new DBException('queueManager->getTicketNumber: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
-					}
-
-				} else {
-					break;
-				}
-
-			} // end while
-
-			// If we got to here and our query result was not a success, then throw an exception...
-			if(!$result) {
-				throw new ProcessingException('queueManager->getTicketNumber: '."Error: Was unable to obtain a ticket in queue: ".$queueName." after ".$attempts." attempts.");
-			}
+			if( ! ( $result = $conn->query($sql) ) ) {
+				throw new DBException('queueManager->getTicketNumber: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			} 
 
 			// return the ticket number
 			return $conn->insert_id;
@@ -1523,7 +1490,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('queueManager->checkFrontOfQueue: '."Error Could not find ticket number ".$ticketNumber." in queue with name: ".$queueName);
 			}
 
-			$sql = "SELECT queue_ticket_id FROM queue_tickets WHERE queue_name='".$conn->real_escape_string($queueName)."' ORDER BY entry_timestamp ASC LIMIT 1";
+			$sql = "SELECT queue_ticket_id FROM queue_tickets WHERE queue_name='".$conn->real_escape_string($queueName)."' ORDER BY queue_ticket_id ASC LIMIT 1";
 
 			if( ! ( $res = $conn->query($sql) ) ) {
 				throw new DBException('queueManager->checkFrontOfQueue: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");

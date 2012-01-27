@@ -139,9 +139,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		// Check the schema version of the DB is XBM_SCHEMA_VERSION
 		function checkSchemaVersion() {
+			$version = $this->getSchemaVersion();
 
-			if( $this->getSchemaVersion() != XBM_SCHEMA_VERSION ) {
-				throw new Exception("Error: Found an incompatible database schema version: ".$row['version']." required version: ".XBM_SCHEMA_VERSION." -- Try running 'xbm upgrade'");
+			if( $version != XBM_SCHEMA_VERSION ) {
+				throw new Exception("Error: Found an incompatible database schema version: ".$version." required version: ".XBM_SCHEMA_VERSION." -- Try running 'xbm upgrade'");
 			}
 
 			return true;

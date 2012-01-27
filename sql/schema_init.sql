@@ -224,10 +224,8 @@ SET character_set_client = utf8;
 CREATE TABLE `queue_tickets` (
   `queue_ticket_id` int(10) unsigned NOT NULL auto_increment,
   `queue_name` varchar(64) default NULL,
-  `entry_time` datetime NOT NULL,
   `pid` int(10) unsigned NOT NULL,
-  PRIMARY KEY  (`queue_ticket_id`),
-  UNIQUE KEY `i_name_entry` (`queue_name`,`entry_time`)
+  PRIMARY KEY  (`queue_ticket_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
@@ -267,7 +265,7 @@ SET character_set_client = @saved_cs_client;
 
 LOCK TABLES `schema_version` WRITE;
 /*!40000 ALTER TABLE `schema_version` DISABLE KEYS */;
-INSERT INTO `schema_version` VALUES (1001);
+INSERT INTO `schema_version` VALUES (1004);
 /*!40000 ALTER TABLE `schema_version` ENABLE KEYS */;
 UNLOCK TABLES;
 
