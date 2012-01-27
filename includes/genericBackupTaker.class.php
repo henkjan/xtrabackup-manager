@@ -156,7 +156,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			
 					// Build the command...
 					$xbCommand = 'ssh -o StrictHostKeyChecking=no -p '.$hostInfo['ssh_port'].' '.$sbInfo['backup_user'].'@'.$hostInfo['hostname'].
-								" 'innobackupex --ibbackup=".$xbBinary." --stream=tar ".$sbInfo['datadir_path']." --user=".$sbInfo['mysql_user'].
+								" 'cd $tempDir ; innobackupex --ibbackup=".$xbBinary." --stream=tar ".$sbInfo['datadir_path']." --user=".$sbInfo['mysql_user'].
 								" --password=".$sbInfo['mysql_password']." --slave-info --safe-slave-backup --tmpdir=".$tempDir;
 			
 					// If table locking for the backup is disabled add the --no-lock option to innobackupex
@@ -167,7 +167,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 					$ncClient = $ncBuilder->getClientCommand($config['SYSTEM']['xbm_hostname'], $rbInfo['port']);
 					$xbCommand .= " | ".$ncClient.
-								' ; exit ${PIPESTATUS[0]}\''; // Makes sure the command run on the remote machine returns the exit status of innobackupex, which is what SSH will return
+								' ; exit ${PIPESTATUS[1]}\''; // Makes sure the command run on the remote machine returns the exit status of innobackupex, which is what SSH will return
 			
 					// Set up how we'll interact with the IO file handlers of the process
 					$xbDescriptors = Array(
@@ -414,7 +414,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$xbBinary = $scheduledBackup->getXtraBackupBinary();
 	
 					// Command should look like this:
-					$xbCommand = "ssh -o StrictHostKeyChecking=no -p ".$hostInfo['ssh_port']." ".$sbInfo['backup_user']."@".$hostInfo['hostname']." 'innobackupex --ibbackup=".$xbBinary." --slave-info --incremental-lsn=".$lsn." ".$tempDir."/deltas".
+					$xbCommand = "ssh -o StrictHostKeyChecking=no -p ".$hostInfo['ssh_port']." ".$sbInfo['backup_user']."@".$hostInfo['hostname'].
+								" 'cd $tempDir ; innobackupex --ibbackup=".$xbBinary." --slave-info --incremental-lsn=".$lsn." ".$tempDir."/deltas".
 								" --user=".$sbInfo['mysql_user']." --safe-slave-backup ".
 								" --password=".$sbInfo['mysql_password']." --no-timestamp --incremental --throttle=".$scheduledBackup->getXtraBackupThrottleValue()." 1>&2 '";
 					
