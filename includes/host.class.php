@@ -48,10 +48,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 
-			$dbGetter = new dbConnectionGetter($config);
+			
 
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 
 			$sql = "SELECT * FROM hosts WHERE host_id=".$this->id;
@@ -72,9 +72,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			global $config;
 
-			$dbGetter = new dbConnectionGetter($config);
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 
 			$sql = "SELECT scheduled_backup_id FROM scheduled_backups WHERE host_id=".$this->id;
@@ -188,8 +188,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			// If nothing linked to this volume, just delete it
 			if(sizeOf($backups) == 0) {
 
-				$dbGetter = new dbConnectionGetter();
-				$conn = $dbGetter->getConnection($this->log);
+				
+				$conn = dbConnection::getInstance($this->log);
 
 				$sql = "DELETE FROM hosts WHERE host_id=".$this->id;
 
@@ -277,8 +277,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('host->getScheduledBackupDisplay: '."Error: The ID for this object is not an integer.");
 			}
 
-			$dbGetter = new dbConnectionGetter();
-			$conn = $dbGetter->getConnection($this->log);
+			
+			$conn = dbConnection::getInstance($this->log);
 
 			switch(strtolower($param)) {
 

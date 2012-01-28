@@ -138,9 +138,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('continuousIncrementalBackupTaker->applyRetentionPolicy: '."Error: This function requires a scheduledBackup object as a parameter.");
 			}
 
-			$dbGetter = new dbConnectionGetter($config);
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE status='COMPLETED' AND scheduled_backup_id=".$scheduledBackup->id." AND snapshot_time IS NOT NULL ORDER BY snapshot_time ASC";
 

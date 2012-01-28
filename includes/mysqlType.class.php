@@ -45,8 +45,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 
-			$dbGetter = new dbConnectionGetter();
-			$conn = $dbGetter->getConnection($this->log);
+			
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT * FROM mysql_types WHERE mysql_type_id=".$this->id;
 

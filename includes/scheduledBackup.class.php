@@ -49,10 +49,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 
-			$dbGetter = new dbConnectionGetter($config);
+			
 
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 
 			$sql = "SELECT sb.*, bs.strategy_code, bs.strategy_name FROM scheduled_backups sb JOIN backup_strategies bs ON sb.backup_strategy_id=bs.backup_strategy_id WHERE scheduled_backup_id=".$this->id;
@@ -169,9 +169,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('scheduledBackup->getSeed: '."Error: The ID for this object is not an integer.");
 			}   
 
-			$dbGetter = new dbConnectionGetter($config);
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE scheduled_backup_id=".$this->id." AND type='SEED' AND status='COMPLETED'";
 
@@ -202,9 +202,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('scheduledBackup->getCompletedSnapshotCount: '."Error: The ID for this object is not an integer.");
 			}
 
-			$dbGetter = new dbConnectionGetter($config);
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE scheduled_backup_id=".$this->id." AND status='COMPLETED'";
 
@@ -225,9 +225,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('scheduledBackup->getSnapshotGroupsNewestToOldest: '."Error: The ID for this object is not an integer.");
 			}
 
-			$dbGetter = new dbConnectionGetter($config);
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT DISTINCT snapshot_group_num FROM backup_snapshots WHERE scheduled_backup_id=".$this->id." AND status='COMPLETED' ORDER BY snapshot_group_num DESC";
 
@@ -286,9 +286,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('scheduledBackup->getMostRecentCompletedBackupSnapshot: '."Error: The ID for this object is not an integer.");
 			}
 
-			$dbGetter = new dbConnectionGetter($config);
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE status='COMPLETED' AND scheduled_backup_id=".$this->id." ORDER BY snapshot_time DESC LIMIT 1";
 
@@ -318,9 +318,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('scheduledBackup->getMostRecentCompletedMaterializedSnapshot: '."Error: The ID for this object is not an integer.");
 			}
 
-			$dbGetter = new dbConnectionGetter($config);
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT materialized_snapshot_id FROM materialized_snapshots WHERE status='COMPLETED' AND scheduled_backup_id=".$this->id." ORDER BY creation_time DESC LIMIT 1";
 
@@ -350,9 +350,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('scheduledBackup->getParameters: '."Error: The ID for this object is not an integer.");
 			}
 
-			$dbGetter = new dbConnectionGetter($config);
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT bsp.param_name, sbp.param_value FROM 
 						scheduled_backups sb JOIN backup_strategy_params bsp 
@@ -648,8 +648,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('scheduledBackup->setParam: '."Error: The ID for this object is not an integer.");
 			}
 
-			$dbGetter = new dbConnectionGetter();
-			$conn = $dbGetter->getConnection($this->log);
+			
+			$conn = dbConnection::getInstance($this->log);
 
 			switch(strtolower($param)) {
 
@@ -793,8 +793,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			}
 
-			$dbGetter = new dbConnectionGetter();
-			$conn = $dbGetter->getConnection($this->log);
+			
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql .= " SET sbp.param_value='".$conn->real_escape_string($value)."' ";
 			$sql .= " WHERE sb.scheduled_backup_id=".$this->id." AND bsp.param_name='".$conn->real_escape_string($param)."'";
@@ -853,8 +853,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				$latestMaterialized->destroy();
 			}
 
-			$dbGetter = new dbConnectionGetter();
-			$conn = $dbGetter->getConnection($this->log);
+			
+			$conn = dbConnection::getInstance($this->log);
 
 			// Remove DB the entries for this scheduledBackup
 			$sql = "DELETE sb.*, sbp.* FROM scheduled_backups sb JOIN scheduled_backup_params sbp USING (scheduled_backup_id) WHERE scheduled_backup_id = ".$this->id;

@@ -57,9 +57,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			global $config;
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE scheduled_backup_id=".$this->scheduledBackupId.
 					" AND snapshot_group_num=".$this->snapshotGroupNum." AND type='SEED' AND status='COMPLETED'";
@@ -91,9 +91,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			global $config;
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE scheduled_backup_id=".$this->scheduledBackupId.
 					" AND snapshot_group_num=".$this->snapshotGroupNum." AND type='INCREMENTAL' AND status='COMPLETED'";
@@ -126,9 +126,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			global $config;
 
-			$dbGetter = new dbConnectionGetter($config);
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE status='COMPLETED' AND scheduled_backup_id=".$this->scheduledBackupId." 
 					AND snapshot_group_num=".$this->snapshotGroupNum." ORDER BY snapshot_time DESC LIMIT 1";
@@ -159,9 +159,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			global $config;
 
-			$dbGetter = new dbConnectionGetter($config);
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE status='COMPLETED' AND scheduled_backup_id=".$this->scheduledBackupId." 
 					AND snapshot_group_num=".$this->snapshotGroupNum." ORDER BY snapshot_time DESC";

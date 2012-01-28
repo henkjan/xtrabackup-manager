@@ -47,10 +47,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 
-			$dbGetter = new dbConnectionGetter($config);
+			
 
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 
 			$sql = "SELECT * FROM backup_strategies WHERE backup_strategy_id=".$this->id;

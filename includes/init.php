@@ -50,7 +50,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 	// Include config and class / function files
 	require('config.php');
-	require('db.classes.php');
+	require('dbConnection.class.php');
 	require('service.classes.php');
 	require('host.class.php');
 	require('backupVolume.class.php');
@@ -61,7 +61,6 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	require('backupSnapshotTaker.class.php');
 	require('runningBackup.class.php');
 	require('mysqlType.class.php');
-	require('configCSV.class.php');
 	require('continuousIncrementalBackupTaker.class.php');
 	require('rotatingBackupTaker.class.php');
 	require('backupSnapshotGroup.class.php');

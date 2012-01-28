@@ -48,12 +48,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			$this->scheduledBackup = $scheduledBackup;
 
-			$dbGetter = new dbConnectionGetter($config);
+			
 
 
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				throw new Exception('backupSnapshot->init: '.$dbGetter->error);
-			}
+			$conn = dbConnection::getInstance($this->log);
 
 
 			if( $parentId === false ) {
@@ -150,9 +148,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT * FROM backup_snapshots WHERE backup_snapshot_id=".$this->id;
 
@@ -190,10 +188,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 
-			$dbGetter = new dbConnectionGetter();
+			
 
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 
 			$sql = "UPDATE backup_snapshots SET status='".$conn->real_escape_string($status)."' ";
@@ -221,10 +219,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 
-			$dbGetter = new dbConnectionGetter();
+			
 
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			if($snapshotTime === false) {
 				$snapshotTime = 'NOW()';
@@ -265,9 +263,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "DELETE FROM backup_snapshots WHERE backup_snapshot_id=".$this->id;
 
@@ -341,9 +339,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('backupSnapshot->assignChildrenNewParent: '."Error: Expected numeric value for new parent to assign to children of this snapshot, but did not get one.");
 			}
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "UPDATE backup_snapshots SET parent_snapshot_id=".$parentId." WHERE parent_snapshot_id=".$this->id;
 
@@ -368,9 +366,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE status='COMPLETED' AND parent_snapshot_id=".$this->id;
 

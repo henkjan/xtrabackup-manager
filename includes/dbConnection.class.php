@@ -22,63 +22,14 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
  	/* classes related to DB conections */
 
-	class dbConnectionGetter {
-
-		function __construct($checkVersion = true) {
-			$this->checkVersion = $checkVersion;
-		}
-
-
-		// Return a new dbConnection connection object to use to connect to the DB
-		function getConnection($logStream) {
-
-			global $config;
-
-			// If we have a socket set - use it..
-			if(isSet($config['DB']['socket']) ) {	
-				$conn = new dbConnection(
-							$config['DB']['host'], 
-							$config['DB']['user'], 
-							$config['DB']['password'], 
-							$config['DB']['schema'], 
-							$config['DB']['port'],
-							$config['DB']['socket']
-							);
-			// If no socket setup - just use TCP settings
-			} else {
-				$conn = new dbConnection(
-							$config['DB']['host'], 
-							$config['DB']['user'], 
-							$config['DB']['password'], 
-							$config['DB']['schema'], 
-							$config['DB']['port']
-							);
-			}
-
-			// Check for error connecting...
-			// We use mysqli_connect_error and errno instead of $conn->connect_error / errno because it was broken before PHP 5.2.9 and 5.3.0
-			if(mysqli_connect_error()) {
-				throw new Exception('dbConnectionGetter->getConnection: ' . "Error: Can't connect to MySQL (".mysqli_connect_errno().") - please check that settings in config.php are correct."
-					. $conn->connect_error);
-			}
-
-			$conn->setLogStream($logStream);
-
-			// If this db connection getter is configged to check the version (default is to do so), then check it.
-			if($this->checkVersion) {
-				$conn->checkSchemaVersion();
-			}
-
-			return $conn;
-
-		}
-
-	}
 
 	class dbConnection extends mysqli {
 
+		private static $conn;
+		private $log;
+
 		// Construct
-		function __construct($host, $username, $password, $schema, $port, $socket = false) {
+		private function __construct($host, $username, $password, $schema, $port, $socket = false) {
 
 			if( $socket === false ) {
 				parent::__construct($host, $username, $password, $schema, $port);
@@ -89,12 +40,67 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		}
 
-		function setLogStream($log) {
+		public function setLogStream($log) {
 			$this->log = $log;
 		}
 
+		// Return a new dbConnection connection object to use to connect to the DB
+		public static function getInstance($logStream, $checkVersion=true) {
+
+			if(!self::$conn) {
+
+				global $config;
+
+				// If we have a socket set - use it..
+				if(isSet($config['DB']['socket']) ) {	
+					self::$conn = new dbConnection(
+								$config['DB']['host'], 
+								$config['DB']['user'], 
+								$config['DB']['password'], 
+								$config['DB']['schema'], 
+								$config['DB']['port'],
+								$config['DB']['socket']
+								);
+				// If no socket setup - just use TCP settings
+				} else {
+					self::$conn = new dbConnection(
+								$config['DB']['host'], 
+								$config['DB']['user'], 
+								$config['DB']['password'], 
+								$config['DB']['schema'], 
+								$config['DB']['port']
+								);
+				}
+
+				// Check for error connecting...
+				// We use mysqli_connect_error and errno instead of $conn->connect_error / errno because it was broken before PHP 5.2.9 and 5.3.0
+				if(mysqli_connect_error()) {
+					throw new Exception('dbConnection->getInstance: ' . "Error: Can't connect to MySQL (".mysqli_connect_errno().") - please check that settings in config.php are correct."
+						. self::$conn->connect_error);
+				}
+
+			} else {
+				// Test the connection -- throw it away and reconnect if it is bad.
+				if( !self::$conn->ping() ) {
+					unset(self::$conn);
+					return self::getInstance($logStream, $checkVersion);
+				}
+			}
+
+			self::$conn->setLogStream($logStream);
+
+			// If this db connection getter is configged to check the version (default is to do so), then check it.
+			if($checkVersion) {
+				self::$conn->checkSchemaVersion();
+			}
+
+			return self::$conn;
+
+		}
+
+
 		// Construct
-		function query($sql) {
+		public function query($sql) {
 
 			if( ( $this->log !== false ) ) {
 				$backtrace = debug_backtrace();
@@ -122,7 +128,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 		// Get the schema version of the database
-		function getSchemaVersion() {
+		public function getSchemaVersion() {
 
 			$sql = "SELECT MAX(version) as version FROM schema_version";
 
@@ -138,7 +144,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 		// Check the schema version of the DB is XBM_SCHEMA_VERSION
-		function checkSchemaVersion() {
+		public function checkSchemaVersion() {
+
 			$version = $this->getSchemaVersion();
 
 			if( $version != XBM_SCHEMA_VERSION ) {
@@ -146,6 +153,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			return true;
+
 		}
 
 	}

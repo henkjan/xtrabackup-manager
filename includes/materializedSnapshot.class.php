@@ -52,9 +52,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			global $config;
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "INSERT INTO materialized_snapshots (materialized_snapshot_id, scheduled_backup_id, backup_snapshot_id, status) "
 					." VALUES (NULL, ".$scheduledBackup->id.", ".$backupSnapshot->id.", 'INITIALIZING' )";
@@ -105,9 +105,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			global $config;
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT * FROM materialized_snapshots WHERE materialized_snapshot_id=".$this->id;
 
@@ -197,9 +197,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			$this->__validate();
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "UPDATE materialized_snapshots SET status='".$conn->real_escape_string($status)."' ";
 
@@ -252,9 +252,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			// Remove the row from the DB.
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 
 			$sql = "DELETE FROM materialized_snapshots WHERE materialized_snapshot_id=".$this->id;

@@ -51,10 +51,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			// if success, then portFound = true
 			// end while
 
-			$dbGetter = new dbConnectionGetter();
+			
 
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 
 			$portFinder = new portFinder();
@@ -128,10 +128,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 
-			$dbGetter = new dbConnectionGetter();
+			
 
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 
 			$sql = "SELECT * FROM running_backups WHERE running_backup_id=".$this->id;
@@ -157,10 +157,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('runningBackup->finish: '."Error: The ID for this object is not an integer.");
 			}
 
-			$dbGetter = new dbConnectionGetter();
+			
 
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$info = $this->getInfo();
 
@@ -194,10 +194,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('runningBackup->getStagingTmpdir: '."Error: The ID for this object is not an integer.");
 			}
 
-			$dbGetter = new dbConnectionGetter();
+			
 
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 
 			$info = $this->getInfo();

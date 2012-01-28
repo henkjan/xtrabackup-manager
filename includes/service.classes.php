@@ -36,10 +36,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		function getAll($activeOnly = false) {
 			global $config;
 
-			$dbGetter = new dbConnectionGetter();
+			
 
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT host_id FROM hosts";
 
@@ -74,9 +74,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			// INSERT the row
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "INSERT INTO hosts (hostname, description) VALUES ('".$conn->real_escape_string($hostname)."', "
 				."'".$conn->real_escape_string($hostDesc)."')";
@@ -101,9 +101,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			host::validateHostname($name);
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT host_id FROM hosts WHERE hostname='".$conn->real_escape_string($name)."'";
 
@@ -136,13 +136,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('hostGetter->getById: '."Error: Expected a numeric ID as a parameter, but did not get one.");
 			}
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-
-			if( ! ( $conn = $dbGetter->getConnection($this->log) ) ) {
-				throw new Exception('hostGetter->getById: '.$dbGetter->error);
-			}
-
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT host_id FROM hosts WHERE host_id=".$id;
 
@@ -178,10 +174,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		function getAll() {
 			global $config;
 
-			$dbGetter = new dbConnectionGetter();
+			
 
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT backup_volume_id FROM backup_volumes";
 
@@ -210,9 +206,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('volumeGetter->getById: '."Error: Expected a numeric ID as a parameter, but did not get one.");
 			}
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT backup_volume_id FROM backup_volumes WHERE backup_volume_id=".$id;
 
@@ -238,9 +234,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			backupVolume::validateName($name);
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT backup_volume_id FROM backup_volumes WHERE name='".$conn->real_escape_string($name)."'";
 
@@ -277,9 +273,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 			// INSERT the row
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "INSERT INTO backup_volumes (name, path) VALUES ('".$conn->real_escape_string($volumeName)."', "
 				."'".$conn->real_escape_string($volumePath)."')";
@@ -314,10 +310,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			global $config;
 
-			$dbGetter = new dbConnectionGetter();
+			
 
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT scheduled_backup_id FROM scheduled_backups";
 
@@ -345,9 +341,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('scheduledBackupGetter->getById: '."Error: The ID for this object is not an integer.");
 			}
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT scheduled_backup_id FROM scheduled_backups WHERE scheduled_backup_id=".$id;
 
@@ -381,9 +377,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new ProcessingException("Error: Could not find a host defined with hostname: $hostname");
 			}
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT scheduled_backup_id FROM scheduled_backups 
 					WHERE host_id=".$host->id." AND name='".$conn->real_escape_string($name)."'";
@@ -460,9 +456,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 			// INSERT the row
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 
 			// Create a new scheduledBackup entry
@@ -527,9 +523,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('mysqlTypeGetter->getById: '."Error: The ID for this object is not an integer.");
 			}   
 			
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT mysql_type_id FROM mysql_types WHERE mysql_type_id=".$id;
 
@@ -794,10 +790,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			global $config;
 
 
-			$dbGetter = new dbConnectionGetter();
+			
 
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT port FROM running_backups";
 
@@ -859,9 +855,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			global $config;
 
-			$dbGetter = new dbConnectionGetter($this->checkSchemaVersion);
-
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log, $this->checkSchemaVersion);
 
 			$sql = "SELECT running_backup_id, pid FROM running_backups";
 
@@ -896,10 +890,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			// Clean the list before we return it
 			$this->cleanRunningBackups();
 			
-			$dbGetter = new dbConnectionGetter($this->checkSchemaVersion);
-			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log, $this->checkSchemaVersion);
 			
 
 			$sql = "SELECT running_backup_id FROM running_backups";
@@ -932,8 +924,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('runningBackupGetter->getByHost: '."Error: The ID for the given host object is not an integer.");
 			}
 
-			$dbGetter = new dbConnectionGetter($this->checkSchemaVersion);
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log, $this->checkSchemaVersion);
 
 			$sql = "SELECT running_backup_id FROM running_backups WHERE host_id=".$host->id;
 
@@ -964,8 +955,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('runningBackupGetter->getByScheduledBackup: '."Error: The ID for the given scheduledBackup object is not an integer.");
 			}
 
-			$dbGetter = new dbConnectionGetter($this->checkSchemaVersion);
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log, $this->checkSchemaVersion);
 
 			$sql = "SELECT running_backup_id FROM running_backups WHERE scheduled_backup_id=".$scheduledBackup->id;
 
@@ -1048,9 +1038,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('backupSnapshotGetter->getById: '."Error: The ID for this object is not an integer.");
 			}
 			
-			$dbGetter = new dbConnectionGetter();
+			
 				
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT backup_snapshot_id FROM backup_snapshots WHERE backup_snapshot_id=".$id;
 				
@@ -1088,9 +1078,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('materializedSnapshotGetter->getById: '."Error: The ID for this object is not an integer.");
 			}
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT materialized_snapshot_id FROM materialized_snapshots WHERE materialized_snapshot_id=".$id;
 
@@ -1453,8 +1443,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			// Clean the queue before we get new tickets
 			$this->cleanQueue($queueName);
 
-			$dbGetter = new dbConnectionGetter();
-			$conn = $dbGetter->getConnection($this->log);
+			
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "INSERT INTO queue_tickets (queue_ticket_id, queue_name, pid) VALUES (NULL, '".$conn->real_escape_string($queueName)."', ".getmypid().")";
 
@@ -1477,8 +1467,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			// Clean the queue before we check it
 			$this->cleanQueue($queueName);
 
-			$dbGetter = new dbConnectionGetter();
-			$conn = $dbGetter->getConnection($this->log);
+			
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT queue_ticket_id FROM queue_tickets WHERE queue_name='".$conn->real_escape_string($queueName)."' AND queue_ticket_id=".$ticketNumber;
 
@@ -1512,8 +1502,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		// Check this queue and remove any entry that belongs to a pid that is not actually running
 		function cleanQueue($queueName) {
 
-			$dbGetter = new dbConnectionGetter();
-			$conn = $dbGetter->getConnection($this->log);
+			
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT queue_ticket_id, pid FROM queue_tickets WHERE queue_name='".$conn->real_escape_string($queueName)."'";
 
@@ -1544,8 +1534,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				throw new Exception('queueManager->releaseTicket: '."Error: Expected a numeric ticket number, but did not get one.");
 			}
 
-			$dbGetter = new dbConnectionGetter();
-			$conn = $dbGetter->getConnection($this->log);
+			
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "DELETE FROM queue_tickets WHERE queue_ticket_id=".$ticketNumber;
 
@@ -1576,9 +1566,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			backupStrategy::validateStrategyCode($code);
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT backup_strategy_id FROM backup_strategies WHERE strategy_code='".$conn->real_escape_string($code)."'";
 
@@ -1606,9 +1596,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			global $config;
 
-			$dbGetter = new dbConnectionGetter();
+			
 
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "SELECT backup_strategy_id FROM backup_strategies WHERE backup_strategy_id=".$id;
 

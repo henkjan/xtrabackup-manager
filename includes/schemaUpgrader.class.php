@@ -48,9 +48,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 			// Create a new DB connection getter that does not check the schema version...
-			$dbGetter = new dbConnectionGetter(false);
-
-			$conn = $dbGetter->getConnection($this->log);
+			$conn = dbConnection::getInstance($this->log, false);
 
 			$schemaVersion = $conn->getSchemaVersion();
 
