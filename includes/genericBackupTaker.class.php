@@ -140,6 +140,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 									);
 
 					// Open the netcat listener proc
+					$this->infolog->write("Attempting to start netcat with command: ".$ncCommand, XBM_LOG_DEBUG);
+
 					$ncProc = proc_open($ncCommand, $ncDescriptors, $ncPipes);
 
 					if(!is_resource($ncProc) ) {
@@ -176,8 +178,6 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 										2 => Array('pipe', 'w')  // Process will write to STDERR pipe
 									);
 			
-					// DEBUG
-					//echo "Attempting to run:\n $xbCommand \n";
 	
 					////////
 					////////
@@ -191,6 +191,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					// Info output
 					$this->infolog->write("Running FULL xtrabackup snapshot of ".$sbInfo['datadir_path']." via ssh: ".$sbInfo['backup_user']."@".$hostInfo['hostname']." ...", XBM_LOG_INFO);
 			
+					// DEBUG
+					$this->infolog->write("Attempting to run the full backup with command:\n ".preg_replace('/--password=(.+?)\s+/', '--password=XXXXXXX ', $xbCommand)."\n", XBM_LOG_DEBUG);
 					// Start the xtrabackup process
 					$xbProc = proc_open($xbCommand, $xbDescriptors, $xbPipes);
 			
@@ -264,7 +266,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 									);
 			
 					// Info log output...
-					$this->infolog->write("Running apply-log with command: ".$applyCommand, XBM_LOG_INFO);
+					$this->infolog->write("Running apply-log with command: ".$applyCommand, XBM_LOG_DEBUG);
 			
 					// Kick off the command
 					$applyProc = proc_open($applyCommand, $applyDescriptors, $applyPipes);
@@ -439,6 +441,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					// Info output
 					$this->infolog->write("Staging an INCREMENTAL xtrabackup snapshot of ".$sbInfo['datadir_path']." via ssh: ".$sbInfo['backup_user']."@".$hostInfo['hostname']." to ".$tempDir."/deltas...", XBM_LOG_INFO);
 					
+					// DEBUG
+					$this->infolog->write("Attempting to run the incremental backup with command:\n".preg_replace('/--password=(.+?)\s+/', '--password=XXXXXXX ', $xbCommand)." \n", XBM_LOG_DEBUG);
+
 					// Start the xtrabackup process
 					$xbProc = proc_open($xbCommand, $xbDescriptors, $xbPipes);
 					
@@ -500,6 +505,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 									);
 
 					// Open the netcat listener proc
+					$this->infolog->write("Attempting to run netcat with command: ".$ncCommand, XBM_LOG_DEBUG);
+
 					$ncProc = proc_open($ncCommand, $ncDescriptors, $ncPipes);
 
 					if(!is_resource($ncProc) ) {
@@ -526,6 +533,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		
 		
 					// Start the xtrabackup process
+					$this->infolog->write("Attempting to run copy with command: ".$copyCommand, XBM_LOG_DEBUG);
 					$copyProc = proc_open($copyCommand, $copyDescriptors, $copyPipes);
 		
 					// Check that we launched OK.

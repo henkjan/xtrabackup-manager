@@ -837,7 +837,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 						if($performDel == true) {
 							$scheduledBackup->destroy();
-							echo("Action: Backup for host: ".$hostname." with name: ".$backupName." and all associated snapshots was deleted.\n\n");
+							echo("\nAction: Backup for host: ".$hostname." with name: ".$backupName." and all associated snapshots was deleted.\n\n");
 						}
 
 
