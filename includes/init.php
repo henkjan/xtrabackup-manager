@@ -48,6 +48,14 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 	$XBM_AUTO_INSTALLDIR = dirname(dirname(__FILE__));
 
+	// Prepare the environment with a reasonable approximation of a multi-byte strlen function
+	// if one is not available -- needed for printing tabled output
+	if (!function_exists('mb_strlen')) { 
+		function mb_strlen($str) { 
+			return strlen(iconv("UTF-8","cp1251", $str ));
+		}
+	}
+
 	// Include config and class / function files
 	require('config.php');
 	require('dbConnection.class.php');
@@ -71,6 +79,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	require('exception.classes.php');
 	require('backupStrategy.class.php');
 	require('schemaUpgrader.class.php');
+	// Include the PHP Text Table project class 
+	// From: http://code.google.com/p/php-text-table/
+	require('php-text-table/text-table.php');
 
 	// Setup global defines that depend on other stuff
 	define('XBM_MAIN_LOG', $config['LOGS']['logdir'].'/xbm.log');

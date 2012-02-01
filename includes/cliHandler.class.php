@@ -43,6 +43,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			echo("snapshot [list|restore|restore-latest] <args>\t -- Manage Backup Snapshots\n");
 
+			echo("status\t\t\t\t\t\t -- Show info about running Backup Tasks\n");
+
 			echo("upgrade\t\t\t\t\t\t -- Upgrade the XtraBackup Manager database schema\n");
 
 			echo("\n");
@@ -110,6 +112,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				case 'upgrade':
 					$this->printHeader();
 					$this->handleUpgradeAction();
+				break;
+
+				// Call the status context handler
+				case 'status':
+					$this->printHeader();
+					$this->handleStatusAction();
 				break;
 
 				// Handle unknown action context
@@ -1226,6 +1234,48 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 			return;
+
+		}
+
+
+		// Handler for printing status information about running backup tasks
+		function handleStatusAction() {
+
+			$runningBackupGetter = new runningBackupGetter();
+			$runningBackupGetter->setLogStream($this->log);
+			$scheduledBackupGetter = new scheduledBackupGetter();
+			$scheduledBackupGetter->setLogStream($this->log);
+			$hostGetter = new hostGetter();
+			$hostGetter->setLogStream($this->log);
+
+			$runningBackups = $runningBackupGetter->getAll();
+
+			$backupRows = Array();
+			foreach($runningBackups as $backup) {
+
+				$info = $backup->getInfo();
+				$host = $hostGetter->getById($info['host_id']);
+				$scheduledBackup = $scheduledBackupGetter->getById($info['scheduled_backup_id']);
+				$hostInfo = $host->getInfo();
+				$sbInfo = $scheduledBackup->getInfo();
+
+				$backupRows[] = array(
+									'ID' => $info['running_backup_id'], 
+									'Host' => $hostInfo['hostname'],
+									'Backup Name' => $sbInfo['name'],
+									'Start Time' => $info['started'],
+									'PID' => $info['pid']
+								);
+			}
+			if(sizeOf($backupRows) > 0) {
+				$textTable = new ArrayToTextTable($backupRows);
+				$textTable->showHeaders(true);
+				$tableOutput = $textTable->render(true);
+
+				print("Currently Running Backups:\n\n".$tableOutput."\n\n");
+			} else {
+				print("There are no backups currently running.\n\n");
+			}
 
 		}
 
