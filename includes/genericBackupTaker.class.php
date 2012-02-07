@@ -55,14 +55,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 		// Take a full backup snapshot into the snapshotGroup given
-		function takeFullBackupSnapshot($scheduledBackup, $snapshotGroup) {
+		function takeFullBackupSnapshot(backupJob $job, $snapshotGroup) {
 
 			global $config;
 
-			// Quick input validation...
-			if($scheduledBackup === false ) {
-				throw new Exception('genericBackupTaker->takeFullBackupSnapshot: '."Error: Expected a scheduledBackup object to be passed to this function and did not get one.");
-			}
+			$scheduledBackup = $job->getScheduledBackup();
 
 			/**********************
 				TAKING FULL BACKUP
@@ -201,7 +198,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						throw new Exception('genericBackupTaker->takeFullBackupSnapshot: '."Error: Unable to use ssh to start innobackupex with: $xbCommand .");
 					}
 			
-					// Check the status of the backup every 5 seconds...
+					// Check the status of the backup every second...
 					$streamContents = '';
 					stream_set_blocking($xbPipes[2], 0);
 					do {
@@ -210,6 +207,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						if( ! ( $xbStatus = proc_get_status($xbProc) ) ) {
 							throw new Exception('genericBackupTaker->takeFullBackupSnapshot: '."Error: Unable to retrieve status on backup process.");
 						}
+
+						if($job->isKilled() ) {
+							throw new KillException('The backup was killed by an administrator.');
+						}
+
 						sleep(1);
 			
 					} while ($xbStatus['running']);
@@ -276,7 +278,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						throw new Exception('genericBackupTaker->takeFullBackupSnapshot: '."Error: Unable to run apply log command: $applyCommand");
 					}
 			
-					// Check the status of the apply log every 5 seconds...
+					// Check the status of the apply log every second...
 					$streamContents = '';
 					stream_set_blocking($applyPipes[2], 0);
 					do {
@@ -284,6 +286,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						if( ! ( $applyStatus = proc_get_status($applyProc) ) ) {
 							throw new Exception('genericBackupTaker->takeFullBackupSnapshot: '."Error: Unable to retrieve status on apply log process.");
 						}
+
+						if($job->isKilled() ) {
+							throw new KillException('The backup was killed by an administrator.');
+						}
+
 						sleep(1);
 			
 					} while ($applyStatus['running']);
@@ -318,6 +325,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	
 				} catch (Exception $e) {
 
+					if(get_class($e) == 'KillException') {
+						$this->infolog->write("The backup job was killed by an administrator. Aborting...", XBM_LOG_ERROR);
+					}
+
 					// If we had a netcat process, check to see if we need to kill it/clean up
 					if(isSet($ncProc) && is_resource($ncProc) ) {
 						proc_terminate($ncProc);
@@ -325,7 +336,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 					// Remove files and make status failed
 					if($config['SYSTEM']['cleanup_on_failure'] == true ) {
-						$this->infolog->write("Cleaning up files after failure...", XBM_LOG_INFO);
+						$this->infolog->write("Cleaning up files...", XBM_LOG_INFO);
 						$snapshot->deleteFiles();
 					} else {
 						$this->infolog->write("Skipping cleanup as cleanup_on_failure is turned off...", XBM_LOG_INFO);
@@ -353,14 +364,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 		// Take an incremental backup snapshot into the snapshotGroup using log sequence number of seedSnap
-		function takeIncrementalBackupSnapshot($scheduledBackup, $snapshotGroup, $seedSnap) {
+		function takeIncrementalBackupSnapshot(backupJob $job, $snapshotGroup, $seedSnap) {
 
 			global $config;
 
-			// Quick input validation...
-			if($scheduledBackup === false ) {
-				throw new Exception('genericBackupTaker->takeIncrementalBackupSnapshot: '."Error: Expected a scheduledBackup object to be passed to this function and did not get one.");
-			}
+			$scheduledBackup = $job->getScheduledBackup();
 
 			/****************************
 	 		  TAKING INCREMENTAL BACKUP
@@ -452,7 +460,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						throw new Exception('genericBackupTaker->takeIncrementalBackupSnapshot: '."Error: Unable to use ssh to start xtrabackup with: $xbCommand .");
 					}   
 					
-					// Check the status of the backup every 5 seconds...
+					// Check the status of the backup every second...
 					$streamContents = '';
 					stream_set_blocking($xbPipes[2], 0);
 					do {
@@ -462,6 +470,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						if( ! ( $xbStatus = proc_get_status($xbProc) ) ) {
 							throw new Exception('genericBackupTaker->takeIncrementalBackupSnapshot: '."Error: Unable to retrieve status on backup process.");
 						}
+
+						if($job->isKilled() ) {
+							throw new KillException('The backup was killed by an administrator.');
+						}
+
 						sleep(1);
 
 					} while ($xbStatus['running']);
@@ -541,7 +554,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						throw new Exception('genericBackupTaker->takeIncrementalBackupSnapshot: '."Error: Unable to use ssh to start copy with: $copyCommand .");
 					}
 		
-					// Check the status of the backup every 5 seconds...
+					// Check the status of the backup every second...
 					$streamContents = '';
 					stream_set_blocking($copyPipes[2], 0);
 					do {
@@ -549,6 +562,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						if( ! ( $copyStatus = proc_get_status($copyProc) ) ) {
 							throw new Exception('genericBackupTaker->takeIncrementalBackupSnapshot: '."Error: Unable to retrieve status on copy process.");
 						}
+
+						if($job->isKilled() ) {
+							throw new KillException('The backup was killed by an administrator.');
+						}
+
 						sleep(1);
 	
 					} while ($copyStatus['running']);
@@ -581,6 +599,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				} catch (Exception $e) {
 
+					if(get_class($e) == 'KillException') {
+						$this->infolog->write("The backup job was killed by an administrator. Aborting...", XBM_LOG_ERROR);
+					}
+
 					// If we had a netcat process, check to see if we need to kill it/clean up
 					if(isSet($ncProc) && is_resource($ncProc) ) {
 						proc_terminate($ncProc);
@@ -588,7 +610,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 					// Remove the snapshot files and mark it as failed.
 					if($config['SYSTEM']['cleanup_on_failure'] == true ) {
-						$this->infolog->write("Cleaning up files after failure...", XBM_LOG_INFO);
+						$this->infolog->write("Cleaning up files...", XBM_LOG_INFO);
 						$snapshot->deleteFiles();
 					} else {
 						$this->infolog->write("Skipping cleanup as cleanup_on_failure is turned off...", XBM_LOG_INFO);

@@ -29,7 +29,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	define('XBM_LOG_ERROR', 2);
 
 	// Define the required schema verions
-	define('XBM_SCHEMA_VERSION', 1004);
+	define('XBM_SCHEMA_VERSION', 1006);
 
 	// Number of seconds we sleep between checking stuff
 	// Usually to see if we can run the backup 
@@ -79,6 +79,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	require('exception.classes.php');
 	require('backupStrategy.class.php');
 	require('schemaUpgrader.class.php');
+	require('backupJob.class.php');
+
 	// Include the PHP Text Table project class 
 	// From: http://code.google.com/p/php-text-table/
 	require('php-text-table/text-table.php');

@@ -33,6 +33,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	class DBException extends Exception {
 	}
 
+	// Exception that occurs when the process was killed
+	class KillException extends Exception {
+	}
 
 
 ?>

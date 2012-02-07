@@ -152,15 +152,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 		// The main functin of this class - take the snapshot for a scheduled backup
-		// Takes a scheduledBackup object as a param
-		function takeScheduledBackupSnapshot ( $scheduledBackup = false ) {
+		function takeScheduledBackupSnapshot ( backupJob $job ) {
 
 			global $config;
 
-			// Quick input validation...
-			if($scheduledBackup === false ) {
-				throw new Exception('rotatingBackupTaker->takeScheduledBackupSnapshot: '."Error: Expected a scheduledBackup object to be passed to this function and did not get one.");
-			}
+			$scheduledBackup = $job->getScheduledBackup();
 
 			// First fetch info to know what we're backing up
 			// Get info on the backup
@@ -202,7 +198,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				if($snapshotGroups[0]->getSeed() === false) {
 					// take a seed snapshot and then return
 					$this->infolog->write("No snapshots found for this scheduled backup at all - taking an initial full backup.", XBM_LOG_INFO);
-					$backupTaker->takeFullBackupSnapshot($scheduledBackup, $snapshotGroups[0]);
+					$backupTaker->takeFullBackupSnapshot($job, $snapshotGroups[0]);
 					return true;
 				}
 			}
@@ -245,7 +241,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						if($launchDate != $seedDate) {
 							$this->infolog->write("No FULL backup found today - rotating to the next snapshot group and taking a full backup for it.", XBM_LOG_INFO);
 							$newGroup = $this->groupFactory->getNextSnapshotGroup($snapshotGroups[0]);
-							$backupTaker->takeFullBackupSnapshot($scheduledBackup, $newGroup);
+							$backupTaker->takeFullBackupSnapshot($job, $newGroup);
 							return true;
 						}
 						$this->infolog->write("Found that we already took a FULL backup today, no rotation needed - proceeding to take an incremental.", XBM_LOG_INFO);
@@ -275,7 +271,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					} 
 
 					// if no, go ahead and take incremental
-					$backupTaker->takeIncrementalBackupSnapshot($scheduledBackup, $snapshotGroups[0],
+					$backupTaker->takeIncrementalBackupSnapshot($job, $snapshotGroups[0],
 																		$snapshotGroups[0]->getMostRecentCompletedBackupSnapshot() );
 					break;
 
@@ -291,12 +287,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 						// if yes, create new group and take seed
 						$newGroup = $this->groupFactory->getNextSnapshotGroup($snapshotGroups[0]);
-						$backupTaker->takeFullBackupSnapshot($scheduledBackup, $newGroup);
+						$backupTaker->takeFullBackupSnapshot($job, $newGroup);
 						return true;
 					} else {
 						// if no, create new incremental in current group based on the most recent complete snap for the group
 						$this->infolog->write("No group rotation needed - proceeding with incremental backup.", XBM_LOG_INFO);
-						$backupTaker->takeIncrementalBackupSnapshot($scheduledBackup, $snapshotGroups[0], 
+						$backupTaker->takeIncrementalBackupSnapshot($job, $snapshotGroups[0], 
 																		$snapshotGroups[0]->getMostRecentCompletedBackupSnapshot() );
 						return true;
 
@@ -315,12 +311,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 		// Check for COMPLETED backup snapshots under the scheduledBackup and perform any necessary merging/deletion
-		function applyRetentionPolicy( $scheduledBackup = false) {
+		function applyRetentionPolicy( backupJob $job ) {
 
-			if($scheduledBackup === false || !is_object($scheduledBackup) ) {
-				throw new Exception('rotatingBackupTaker->applyRetentionPolicy: '."Error: Expected a scheduledBackup object to be passed as a parameter, but did not get one.");
-			}
-
+			$scheduledBackup = $job->getScheduledBackup();
 
 			$groups = array_reverse($scheduledBackup->getSnapshotGroupsNewestToOldest());
 
@@ -345,13 +338,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		}
 
 		// Handle any postProcessing
-		function postProcess($scheduledBackup = false) {
+		function postProcess(backupJob $job) {
 
-			// Validate
-			if($scheduledBackup === false || !is_object($scheduledBackup) ) {
-				throw new Exception('rotatingBackupTaker->postProcess: '."Error: Expected a scheduledBackup object to be passed as a parameter, but did not get one.");
-			}
-
+			$scheduledBackup = $job->getScheduledBackup();
 			// Get Params
 			$sbParams = $scheduledBackup->getParameters();
 			$this->validateParams($sbParams);
@@ -360,6 +349,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			if(isSet($sbParams['maintain_materialized_copy']) && ($sbParams['maintain_materialized_copy'] == 1) ) {
 
 				$this->infolog->write("Maintain materialized copy feature is enabled for this backup -- materializing latest backup ...", XBM_LOG_INFO);
+				$job->setStatus('Materializing Latest');
 
 				$manager = new materializedSnapshotManager();
 				$manager->setInfoLogStream($this->infolog);

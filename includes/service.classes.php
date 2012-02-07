@@ -36,8 +36,6 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		function getAll($activeOnly = false) {
 			global $config;
 
-			
-
 
 			$conn = dbConnection::getInstance($this->log);
 
@@ -154,6 +152,96 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$host->setLogStream($this->log);
 
 			return $host;
+		}
+
+	}
+
+
+	// Service class to get backupJobs
+	class backupJobGetter {
+
+		function __construct() {
+			$this->log = false;
+		}   
+
+
+		function setLogStream($log) {
+			$this->log = $log;
+		}   
+
+		function getNew(scheduledBackup $scheduledBackup) {
+
+			$sbInfo = $scheduledBackup->getInfo();
+
+			$conn = dbConnection::getInstance($this->log);
+
+			$sql = "INSERT INTO backup_jobs (backup_job_id, start_time, status, scheduled_backup_id, pid ) VALUES ".
+					"(NULL, NOW(), 'Initializing', ".$sbInfo['scheduled_backup_id'].", ".getmypid()." )";
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new DBException('backupJobGetter->getNew: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+            
+            $job = new backupJob($conn->insert_id);
+            $job->setLogStream($this->log); 
+                
+            return $job;
+
+		}
+
+		// Get all the running backup jobs
+		function getRunning() {
+
+
+			$conn = dbConnection::getInstance($this->log);
+
+			$sql = "SELECT backup_job_id, pid FROM backup_jobs WHERE status NOT IN ('Failed', 'Completed', 'Killed')";
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new DBException('backupJobGetter->getRunning: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			$runningJobs = Array();
+
+			while( $row = $res->fetch_array() ) {
+				// Check if the pid is valid
+				if(file_exists('/proc/'.$row['pid']) ) {
+					$runningJobs[] = new backupJob($row['backup_job_id']);
+				}
+				
+			}
+
+			return $runningJobs;
+			
+		}
+
+		// Get the backup job by ID
+		function getById($id, $notFoundException = true) {
+
+			if(!is_numeric($id)) {
+				throw new Exception('backupJobGetter->getById: '."Error: Expected a numeric ID for the backup job to fetch, but did not get one.");
+			}
+
+			$conn = dbConnection::getInstance($this->log);
+
+			$sql = "SELECT backup_job_id FROM backup_jobs WHERE backup_job_id=".$id;
+
+			if( ! ($res = $conn->query($sql) ) ) {
+				throw new DBException('backupJobGetter->getById: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			if($res->num_rows != 1 ) {
+				if($notFoundException == true) {
+					throw new Exception('backupJobGetter->getById: '."Error: Could not find a Backup Job with ID ".$id);
+				} else {
+					return false;
+				}
+			}
+
+			$job = new backupJob($id);
+
+			return $job;
+
 		}
 
 	}

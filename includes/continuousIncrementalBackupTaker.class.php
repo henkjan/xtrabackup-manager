@@ -70,14 +70,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 		// The main functin of this class - take the snapshot for a scheduled backup
 		// Takes a scheduledBackup object as a param
-		function takeScheduledBackupSnapshot ( $scheduledBackup = false ) {
+		function takeScheduledBackupSnapshot ( backupJob $job ) {
 
 			global $config;
 
-			// Quick input validation...
-			if($scheduledBackup === false ) {
-				throw new Exception('continuousIncrementalBackupTaker->takeScheduledBackupSnapshot: '."Error: Expected a scheduledBackup object to be passed to this function and did not get one.");
-			}
+			$scheduledBackup = $job->getScheduledBackup();
+
 
 			// First fetch info to know what we're backing up
 
@@ -116,10 +114,10 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			// If this group has a seed snapshot, then take incremental...
 			if($seedSnap) {
-				$backupTaker->takeIncrementalBackupSnapshot($scheduledBackup, $sbGroups[0], $sbGroups[0]->getMostRecentCompletedBackupSnapshot() );
+				$backupTaker->takeIncrementalBackupSnapshot($job, $sbGroups[0], $sbGroups[0]->getMostRecentCompletedBackupSnapshot() );
 			// Otherwise take a FULL backup
 			} else {
-				$backupTaker->takeFullBackupSnapshot($scheduledBackup, $sbGroups[0]);
+				$backupTaker->takeFullBackupSnapshot($job, $sbGroups[0]);
 			}
 
 			return true;
@@ -128,9 +126,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 		// Check for COMPLETED backup snapshots under the scheduledBackup and perform any necessary merging/deletion
-		function applyRetentionPolicy( $scheduledBackup = false) {
+		function applyRetentionPolicy( backupJob $job ) {
 
 			global $config;
+
+			$scheduledBackup = $job->getScheduledBackup();
+
 
 			$this->infolog->write("Checking to see if any snapshots need to be merged into the seed backup.", XBM_LOG_INFO);
 
@@ -197,7 +198,9 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 
 		// Handle any postProcessing
-		function postProcess($scheduledBackup = false) {
+		function postProcess( backupJob $job ) {
+
+			$scheduledBackup = $job->getScheduledBackup();
 
 			// Validate
 			if($scheduledBackup === false || !is_object($scheduledBackup) ) {
@@ -212,6 +215,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			if(isSet($sbParams['maintain_materialized_copy']) && ($sbParams['maintain_materialized_copy'] == 1) ) {
 
 				$this->infolog->write("Maintain materialized copy feature is enabled for this backup -- materializing latest backup ...", XBM_LOG_INFO);
+				$job->setStatus('Materializing Latest');
 
 				$manager = new materializedSnapshotManager();
 				$manager->setInfoLogStream($this->infolog);

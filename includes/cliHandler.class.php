@@ -45,6 +45,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			echo("status\t\t\t\t\t\t -- Show info about running Backup Tasks\n");
 
+			echo("kill [job_id]\t\t\t\t\t -- Kill running Backup Tasks\n");
+
 			echo("upgrade\t\t\t\t\t\t -- Upgrade the XtraBackup Manager database schema\n");
 
 			echo("\n");
@@ -106,6 +108,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				case 'snapshots':
 					$this->printHeader();
 					$this->handleSnapshotActions($args);
+				break;
+
+				// Call the kill context handler
+				case 'kill':
+					$this->printHeader();
+					$this->handleKillAction($args);
 				break;
 
 				// Call the upgrade context handler
@@ -904,14 +912,25 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 									$hostInfo = $host->getInfo();
 									$sbInfo = $scheduledBackup->getInfo();
 
-									$subj =  "XtraBackup Manager - ALERT - Backup Failure for ".$hostInfo['hostname'];
 
-									$msg =  "A fatal error occurred while attempting to run the following backup\n\n";
-									$msg .= "MySQL Backup Host: ".$hostInfo['hostname']." - ".$hostInfo['description']."\n";
-									$msg .= "XtraBackup Manager Host: ".$XBM_AUTO_HOSTNAME."\n";
-									$msg .= "Scheduled Backup: ".$sbInfo['name']."\n";
-									$msg .= "Exception details:\n".$e->getMessage()."\n";
-									$msg .= "Trace:\n".$e->getTraceAsString()."\n\n";
+									if(get_class($e) == 'KillException') {
+										$subj = "XtraBackup Manager - ALERT - Backup Aborted for ".$hostInfo['hostname'];
+										$msg =  "The following backup was aborted by an administrator\n\n";
+										$msg .= "MySQL Backup Host: ".$hostInfo['hostname']." - ".$hostInfo['description']."\n";
+										$msg .= "XtraBackup Manager Host: ".$XBM_AUTO_HOSTNAME."\n";
+										$msg .= "Scheduled Backup: ".$sbInfo['name']."\n";
+
+									} else {
+
+										$subj =  "XtraBackup Manager - ALERT - Backup Failure for ".$hostInfo['hostname'];
+
+										$msg =  "A fatal error occurred while attempting to run the following backup\n\n";
+										$msg .= "MySQL Backup Host: ".$hostInfo['hostname']." - ".$hostInfo['description']."\n";
+										$msg .= "XtraBackup Manager Host: ".$XBM_AUTO_HOSTNAME."\n";
+										$msg .= "Scheduled Backup: ".$sbInfo['name']."\n";
+										$msg .= "Exception details:\n".$e->getMessage()."\n";
+										$msg .= "Trace:\n".$e->getTraceAsString()."\n\n";
+									}
 
 								} catch ( Exception $secondaryException ) {
 
@@ -1241,29 +1260,31 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		// Handler for printing status information about running backup tasks
 		function handleStatusAction() {
 
-			$runningBackupGetter = new runningBackupGetter();
-			$runningBackupGetter->setLogStream($this->log);
+			$backupJobGetter = new backupJobGetter();
+			$backupJobGetter->setLogStream($this->log);
 			$scheduledBackupGetter = new scheduledBackupGetter();
 			$scheduledBackupGetter->setLogStream($this->log);
 			$hostGetter = new hostGetter();
 			$hostGetter->setLogStream($this->log);
 
-			$runningBackups = $runningBackupGetter->getAll();
+			$runningJobs = $backupJobGetter->getRunning();
 
 			$backupRows = Array();
-			foreach($runningBackups as $backup) {
+			foreach($runningJobs as $job) {
 
-				$info = $backup->getInfo();
-				$host = $hostGetter->getById($info['host_id']);
-				$scheduledBackup = $scheduledBackupGetter->getById($info['scheduled_backup_id']);
+				$info = $job->getInfo();
+				$scheduledBackup = $job->getScheduledBackup();
+				$host = $scheduledBackup->getHost();
+
 				$hostInfo = $host->getInfo();
 				$sbInfo = $scheduledBackup->getInfo();
 
 				$backupRows[] = array(
-									'ID' => $info['running_backup_id'], 
+									'Job ID' => $info['backup_job_id'], 
 									'Host' => $hostInfo['hostname'],
 									'Backup Name' => $sbInfo['name'],
-									'Start Time' => $info['started'],
+									'Start Time' => $info['start_time'],
+									'Status' => $info['status'],
 									'PID' => $info['pid']
 								);
 			}
@@ -1277,6 +1298,36 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				print("There are no backups currently running.\n\n");
 			}
 
+		}
+
+
+		// Handler for killing backup jobs
+		function handleKillAction($args) {
+
+			if(!isSet($args[2]) || !is_numeric($args[2]) ) {
+				echo("Error: Expected a numeric Job ID as a parameter but did not get one.\n\n");
+				return;
+			}
+
+			$jobGetter = new backupJobGetter();
+			$jobGetter->setLogStream($this->log);
+
+			if( ! ( $job = $jobGetter->getById($args[2], false) ) ) {
+				throw new ProcessingException("Error: Unable to find a Backup Job with ID ".$args[2].".");
+			} 
+
+			if($job->isRunning() ) {
+
+				$job->setKilled(true);
+
+				echo("Action: Backup Job ID ".$args[2]." was killed.\n\n");
+			} else {
+
+				echo("Error: The Backup Job with ID ".$args[2]." is not running.\n\n");
+			}
+
+			return;
+			
 		}
 
 	}

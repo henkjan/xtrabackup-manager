@@ -53,6 +53,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 			$this->launchTime = time();
 
+
+
 			// Get the backup strategy for the scheduledBackup
 			$sbInfo = $scheduledBackup->getInfo();
 
@@ -77,6 +79,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				$this->infolog->write($msg, XBM_LOG_INFO);
 				$msg = 'Using Backup Strategy: '.$sbInfo['strategy_name'];
 				$this->infolog->write($msg, XBM_LOG_INFO);
+
+				// Create an entry for this backup job
+				$jobGetter = new backupJobGetter();
+				$jobGetter->setLogStream($this->log);
+
+				$job = $jobGetter->getNew($scheduledBackup);
 
 				// Check to see if we can even start this party
 
@@ -118,14 +126,24 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				// Create this object now, so we don't recreate it a tonne of times in the loop
 				$runningBackupGetter = new runningBackupGetter();
-			
+
+				// Mark us as "QUEUED" while we figure out if we can launch...
+				$job->setStatus('Queued');
+
 				$readyToRun = false; 
 				while($readyToRun == false ) {
 
 					// If we are not at the front of the queue for this host, then sleep/wait until we are.
 					if( ! $queueManager->checkFrontOfQueue($hostQueueName, $hostQueueTicket) ) {
 						$this->infolog->write("There are jobs before this one in the queue for this host. Sleeping ".XBM_SLEEP_SECS." before checking again...", XBM_LOG_INFO);
-						sleep(XBM_SLEEP_SECS);
+						for($i = 0; $i <= XBM_SLEEP_SECS; $i++) {
+
+							if($job->isKilled() ) {
+								throw new KillException('The backup was killed by an administrator.');
+							}
+							sleep(1);
+
+						}
 						continue;
 					}
 
@@ -139,7 +157,16 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						// maybe it is too much
 						$this->infolog->write("Found ".sizeOf($runningBackups)." backup(s) running for this host out of a maximum of ".
 							$config['SYSTEM']['max_host_concurrent_backups']." per host. Sleeping ".XBM_SLEEP_SECS." before retry...", XBM_LOG_INFO);
-						sleep(XBM_SLEEP_SECS);
+
+						for($i = 0; $i <= XBM_SLEEP_SECS; $i++) {
+
+							if($job->isKilled() ) {
+								throw new KillException('The backup was killed by an administrator.');
+							}
+							sleep(1);
+
+						}
+
 						continue;
 					}
 
@@ -152,7 +179,14 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					// If we are not at the front of the queue for global backups, then sleep/wait until we are
 					if( ! $queueManager->checkFrontOfQueue($globalQueueName, $globalQueueTicket) ) {
 						$this->infolog->write("There are jobs before this one in the global backup queue. Sleeping ".XBM_SLEEP_SECS." before checking again...", XBM_LOG_INFO);
-						sleep(XBM_SLEEP_SECS);
+						for($i = 0; $i <= XBM_SLEEP_SECS; $i++) {
+
+							if($job->isKilled() ) {
+								throw new KillException('The backup was killed by an administrator.');
+							}
+							sleep(1);
+
+						}
 						continue;
 					}
 
@@ -164,7 +198,15 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						// maybe too much?
 						$this->infolog->write("Found ".sizeOf($globalRunningBackups)." backup(s) running out of a global maximum of ".
 							$config['SYSTEM']['max_global_concurrent_backups'].". Sleeping ".XBM_SLEEP_SECS." before retry...", XBM_LOG_INFO);
-						sleep(XBM_SLEEP_SECS);
+
+						for($i = 0; $i <= XBM_SLEEP_SECS; $i++) {
+
+							if($job->isKilled() ) {
+								throw new KillException('The backup was killed by an administrator.');
+							}
+							sleep(1);
+
+						}
 						continue;
 					}
 
@@ -180,7 +222,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				$backupTaker->setTicketsToReleaseOnStart(Array($hostQueueTicket, $globalQueueTicket));
 
 				// Kick off takeScheduledBackupSnapshot method of the actual backup taker
-				$backupTaker->takeScheduledBackupSnapshot($scheduledBackup);
+				$job->setStatus('Performing Backup');
+				$backupTaker->takeScheduledBackupSnapshot($job);
 
 				// Release the ticket for running the backup..
 				$queueManager->releaseTicket($schedQueueTicket);
@@ -191,12 +234,20 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				// Proceed once we're at the start of the retention policy queue for this scheduled backup
 				while(!$queueManager->checkFrontOfQueue($retentionQueueName, $retentionQueueTicket) ) {
 					$this->infolog->write('There is already a task applying retention policy for this scheduled backup. Sleeping '.XBM_SLEEP_SECS.' before retry...', XBM_LOG_INFO);
-					sleep(XBM_SLEEP_SECS);
+					for($i = 0; $i <= XBM_SLEEP_SECS; $i++) {
+
+						if($job->isKilled() ) {
+							throw new KillException('The backup was killed by an administrator.');
+						}
+						sleep(1);
+
+					}
 				}
 
 				// Apply the retention policy
 				$this->infolog->write("Applying snapshot retention policy ...", XBM_LOG_INFO);
-				$backupTaker->applyRetentionPolicy($scheduledBackup);
+				$job->setStatus('Deleting Old Backups');
+				$backupTaker->applyRetentionPolicy($job);
 				$this->infolog->write("Application of retention policy complete.", XBM_LOG_INFO);
 
 				$queueManager->releaseTicket($retentionQueueTicket);
@@ -208,18 +259,41 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				$postProcessQueueTicket = $queueManager->getTicketNumber($postProcessQueueName);
 				while(!$queueManager->checkFrontOfQueue($postProcessQueueName, $postProcessQueueTicket) ) {
 					$this->infolog->write('There is already a task performing post processing for this scheduled backup. Sleeping '.XBM_SLEEP_SECS.' before retry...', XBM_LOG_INFO);
-					sleep(XBM_SLEEP_SECS);
+					for($i = 0; $i <= XBM_SLEEP_SECS; $i++) {
+
+						if($job->isKilled() ) {
+							throw new KillException('The backup was killed by an administrator.');
+						}
+						sleep(1);
+
+					}
 				}
 
 				$this->infolog->write("Performing any post-processing necessary ...", XBM_LOG_INFO);
-				$backupTaker->postProcess($scheduledBackup);
+				$job->setStatus('Performing Post-Processing');
+				$backupTaker->postProcess($job);
 
 				$this->infolog->write("Post-processing completed.", XBM_LOG_INFO);
 				$queueManager->releaseTicket($postProcessQueueTicket);
 
 				$this->infolog->write("Scheduled Backup Task Complete!", XBM_LOG_INFO);
+				$job->setStatus('Completed');
+
+			} catch ( KillException $e ) {
+
+				if(isSet($job)) {
+					$job->setStatus('Killed');
+				}
+
+				$this->infolog->write('Exiting after the backup job was killed...', XBM_LOG_ERROR);
+				throw $e;
 
 			} catch( Exception $e ) {
+
+				if(isSet($job) ) {
+					$job->setStatus('Failed');
+				}
+
 				$this->infolog->write('An error occurred while trying to perform the backup. Proceeding to log some details to help debug...', XBM_LOG_ERROR);
 				$this->infolog->write('Error Caught: '.$e->getMessage(), XBM_LOG_ERROR);
 				$this->infolog->write('Trace: '.$e->getTraceAsString(), XBM_LOG_ERROR);
