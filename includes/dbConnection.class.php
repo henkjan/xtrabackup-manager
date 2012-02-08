@@ -82,7 +82,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			} else {
 				// Test the connection -- throw it away and reconnect if it is bad.
 				if( !self::$conn->ping() ) {
-					unset(self::$conn);
+					self::$conn = false;
 					return self::getInstance($logStream, $checkVersion);
 				}
 			}
