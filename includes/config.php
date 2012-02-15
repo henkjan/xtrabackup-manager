@@ -35,8 +35,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	// Where the logs should be stored
 	$config['LOGS']['logdir'] = $XBM_AUTO_INSTALLDIR . '/logs';
 
-	// What log level should we use - DEBUG, INFO, ERROR
-	$config['LOGS']['level'] = 'DEBUG';
+	// What log level should we use - constants of any of: XBM_LOG_DEBUG, XBM_LOG_INFO, XBM_LOG_ERROR
+	$config['LOGS']['level'] = XBM_LOG_DEBUG;
 
 	// The port range made available for use by XBM with netcat - 
 	// these ports need to be openable on the backup hsot

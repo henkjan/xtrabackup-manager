@@ -112,10 +112,15 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	
 					// Set the command we plan to run
 					$ncLogfile = $config['LOGS']['logdir'].'/hosts/'.$hostInfo['hostname'].'.netcat.log';
-					$ncCommand = ' cd '.$path.' ; '.$ncServer;
+
+					// Change dir to the path where the files should end up
+					$ncCommand = ' cd '.$path.' ; ';
+					// Detect if there is a /usr/bnu/bin/tar -- This lets us catch GNU tar on Solaris 11 and use it (non-GNU tar doesn't work properly)
+					$ncCommand .= ' if [ -f /usr/gnu/bin/tar ]; then TAR="/usr/gnu/bin/tar"; else TAR=tar; fi; ';
+					// Lastly, put the netcat command
+					$ncCommand .= $ncServer;
 
 					// Add the throttle if enabled
-					
 					if($sbInfo['throttle'] > 0) {
 
 						system('pv -V > /dev/null 2>&1', $pvReturn);
@@ -125,7 +130,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						$ncCommand .= " | pv -q -L".$scheduledBackup->getMbpsThrottleValue()."m ";
 					}
 
-					$ncCommand .= ' | tar xvif - >> '.$ncLogfile.' 2>&1';
+					// Pipe output through previously detected tar command to use
+					$ncCommand .= ' | $TAR xvif - >> '.$ncLogfile.' 2>&1';
 			
 					// Open the process with a stream to read from it
 
@@ -506,7 +512,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$ncServer = $ncBuilder->getServerCommand($rbInfo['port']);
 
 					$ncLogfile = $config['LOGS']['logdir'].'/hosts/'.$hostInfo['hostname'].'.netcat.log';
-					$ncCommand = ' cd '.$path.' ; '.$ncServer.' | tar xvf - >> '.$ncLogfile.' 2>&1';
+					// Change to the dir where we want to put the files
+					$ncCommand = ' cd '.$path.' ; ';
+					// Check to see if there us a GNU tar - used to make XBM work on Solaris 11, since their tar doesn't work correctly
+					$ncCommand .= ' if [ -f /usr/gnu/bin/tar ]; then TAR="/usr/gnu/bin/tar"; else TAR=tar; fi; ';
+					// Now start the netcat listener and pipe through the auto-detected tar command
+					$ncCommand .= $ncServer.' | $TAR xvf - >> '.$ncLogfile.' 2>&1';
 	
 					// Open the process with a stream to read from it
 
