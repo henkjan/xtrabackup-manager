@@ -130,15 +130,16 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		// Get the schema version of the database
 		public function getSchemaVersion() {
 
-			$sql = "SELECT MAX(version) as version FROM schema_version";
+			$sql = "SELECT version as version FROM schema_version";
 
 			if( ! ( $res = $this->query($sql) ) ) {
 				throw new Exception('dbConnetion->getSchemaVersion: '."Error: Query: $sql \nFailed with MySQL Error: $this->error");
 			}
 
 			if( ! ( $row = $res->fetch_array() ) ) {
-				throw new Exception('dbConnection->getSchemaVersion: '."Error: Could not find any information in schema_version table. Please ensure the database is correctly initialized.");
+				throw new Exception('dbConnection->getSchemaVersion: '."Error: Could not find any information in schema_version table. Please ensure the database is correctly initialized with schema_init.sql.");
 			}
+
 			return $row['version'];
 
 		}
