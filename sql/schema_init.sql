@@ -265,9 +265,28 @@ SET character_set_client = @saved_cs_client;
 
 LOCK TABLES `schema_version` WRITE;
 /*!40000 ALTER TABLE `schema_version` DISABLE KEYS */;
-INSERT INTO `schema_version` VALUES (1004);
+INSERT INTO `schema_version` VALUES (1006);
 /*!40000 ALTER TABLE `schema_version` ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Dumping data for table `backup_jobs`
+--
+
+DROP TABLE IF EXISTS `backup_jobs`;
+CREATE TABLE `backup_jobs` (
+    backup_job_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    scheduled_backup_id INT UNSIGNED NOT NULL,
+    start_time datetime NOT NULL,
+    running_time datetime NULL,
+    end_time datetime NULL,
+    status VARCHAR(64) NOT NULL DEFAULT 'Initializing',
+    pid INT UNSIGNED NOT NULL,
+    killed TINYINT UNSIGNED DEFAULT 0,
+    PRIMARY KEY (backup_job_id),
+    INDEX i_status (status)
+) ENGINE=InnoDB CHARSET=utf8;
+
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
