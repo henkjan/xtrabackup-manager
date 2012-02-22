@@ -1248,7 +1248,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			@exec($cmd, $output, $returnVar);
 
 			if( $returnVar != 0 ) {
-				throw new Exception('remoteTempDir->destroy: '."Error: Encoutnered a problem removing remote temp dir: ".$this->user."@".$this->host.":".$this->dir."  Last output:\n".implode("\n",$output));
+				throw new Exception('remoteTempDir->destroy: '."Error: Encountered a problem removing remote temp dir: ".$this->user."@".$this->host.":".$this->dir."  Last output:\n".implode("\n",$output));
 			}
 
 			return true;

@@ -113,13 +113,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 					$queueManager->releaseTicket($hostQueueTicket);
 					$queueManager->releaseTicket($schedQueueTicket);
 
-					if($scheduledBackup->isRunning() ) {
-						$this->infolog->write("Detected this scheduled backup job is already running, exiting...", XBM_LOG_ERROR);
-						throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Detected this scheduled backup job is already running.");
-					} else {
-						$this->infolog->write("Encountered an error detecting whether this scheduled backup job is already running,.. exiting to be safe...", XBM_LOG_ERROR);
-						throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Could not accurately determine whether this scheduled backup is already running.");
-					}
+					$this->infolog->write("Detected this scheduled backup job is already running, exiting...", XBM_LOG_ERROR);
+					throw new Exception('backupSnapshotTaker->takeScheduledBackupSnapshot: '."Error: Detected this scheduled backup job is already running.");
 
 				}
 
