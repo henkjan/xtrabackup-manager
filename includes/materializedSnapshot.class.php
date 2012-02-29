@@ -228,6 +228,27 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			$this->__validate();
 
 			$this->setStatus('DELETING');
+			$this->deleteFiles();
+
+			// Remove the row from the DB.
+			$conn = dbConnection::getInstance($this->log);
+
+			$sql = "DELETE FROM materialized_snapshots WHERE materialized_snapshot_id=".$this->id;
+
+			if( ! $conn->query($sql) ) {
+				throw new Exception('materializedSnapshot->destroy: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
+			}
+
+			if( $conn->affected_rows != 1 ) {
+				throw new Exception('materializedSnapshot->destroy: '."Error: Failed to delete the Materialized Snapshot with ID ".$this->id.".");
+			}
+
+			return true;
+
+		}
+
+		// Delete the files/dir for this materializedSnapshot on the filesystem
+		function deleteFiles() {
 
 			// Get the path
 			$path = $this->getPath();
@@ -251,25 +272,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				$deleter->delTree($path.'/');
 			}
 
-			// Remove the row from the DB.
-			
-
-			$conn = dbConnection::getInstance($this->log);
-
-
-			$sql = "DELETE FROM materialized_snapshots WHERE materialized_snapshot_id=".$this->id;
-
-			if( ! $conn->query($sql) ) {
-				throw new Exception('materializedSnapshot->destroy: '."Error: Query: $sql \nFailed with MySQL Error: $conn->error");
-			}
-
-			if( $conn->affected_rows != 1 ) {
-				throw new Exception('materializedSnapshot->destroy: '."Error: Failed to delete the Materialized Snapshot with ID ".$this->id.".");
-			}
 
 			return true;
 
 		}
+
 
 	}
 

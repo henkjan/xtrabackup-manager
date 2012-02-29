@@ -69,13 +69,16 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				if( !mkdir($path) ) {
 					throw new Exception('backupRestorer->restoreLocal: '."Error: Attempted to create directory for restore, but failed -- $path");
 				}
+				// Set permissions to be rwx owner and rx group.
+				if( ! @chmod($path, 0750) ) {
+					throw new Exception('backupRestorer->restoreLocal: '."Error: Attempted to change permissions for newly created restore path, but failed -- $path");
+				}
 			} else if(!is_dir($path)) {
 				throw new Exception('backupRestorer->restoreLocal: '."Error: Specified path location is not a directory -- $path");
-			}
+			} 
 
-			// Set permissions to be rwx owner and rx group.
-			if( !chmod($path, 0750) ) {
-				throw new Exception('backupRestorer->restoreLocal: '."Error: Attempted to change permissions for restore path, but failed -- $path");
+			if( ! is_writeable($path) ) {
+				throw new Exception('backupRestorer->restoreLocal: '."Error: The specified path location is no writeable -- $path");
 			}
 
 			// Strip trailing space (and spaces if there are any for some weird reason

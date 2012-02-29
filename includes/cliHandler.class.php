@@ -296,7 +296,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 						// Display materialized snapshot if enabled
 						$params = $scheduledBackup->getParameters();
-						if($params['maintain_materialized_copy'] == 1) {
+						if(isSet($params['maintain_materialized_copy']) && $params['maintain_materialized_copy'] == 1) {
 
 							$materialized = $scheduledBackup->getMostRecentCompletedMaterializedSnapshot();
 							echo("	-- Latest Materialized Snapshot:\n");

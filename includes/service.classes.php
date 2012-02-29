@@ -1397,15 +1397,17 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				if( ! ( $mergeStatus = proc_get_status($mergeProc) ) ) {
 					throw new Exception('backupSnapshotMerger->mergePaths: '."Error: Unable to retrieve status on merge process.");
 				}
-				sleep(5);
+				sleep(1);
 
 			} while ($mergeStatus['running']);
 
 			// Check exit status
 			if($mergeStatus['exitcode'] <> 0 ) {
-				throw new Exception('backupSnapshotMerger->mergePaths: '."Error: There was an error merging snapshots - The process returned code ".$mergeStatus['exitcode'].".\n".
+
+				$failMsg ="The process returned code ".$mergeStatus['exitcode'].".\n".
 								"The command issued was:\n".$mergeCommand."\n".
-								"The output is as follows:\n".$streamContents);
+								"The output is as follows:\n".$streamContents;
+				throw new MergeException('backupSnapshotMerger->mergePaths: '."Error: There was an error merging snapshots - ".$failMsg, $failMsg);
 			}
 
 			return true;
@@ -1477,7 +1479,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			switch($stratCode) {
 
 				case 'FULLONLY':
-					throw new Exception('backupTakerFactory->getBackupTaker: '."Error: FULLONLY backup method is not yet supported.");
+					return new fullonlyBackupTaker();
 				break;
 
 				case 'CONTINC':

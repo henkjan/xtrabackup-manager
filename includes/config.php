@@ -80,12 +80,12 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	// Email alerts
 
 	// Send email alerts when failures are caught? true/false
-	$config['ALERTS']['enabled'] = true;
+	$config['ALERTS']['enabled'] = false;
 
 	// Where should alert emails be sent to? Comma separated for multiple email addresses
-	$config['ALERTS']['email'] = 'lmulcahy@marinsoftware.com';
+	//$config['ALERTS']['email'] = 'alerts@yourdomain.com';
 
 	// What should the reply to address for alert emails be
-	$config['ALERTS']['replyto'] = 'xbmdev-noreply@marinsoftware.com.com';
+	$config['ALERTS']['replyto'] = 'xbmdev-noreply@yourdomain.com';
 
 ?>

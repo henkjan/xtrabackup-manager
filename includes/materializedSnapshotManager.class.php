@@ -41,6 +41,8 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 		// For the given scheduledBackup, update the materialized backup to the latest
 		function materializeLatest($scheduledBackup = false) {
 
+			global $config;
+
 			// Validate
 			if($scheduledBackup === false || !is_object($scheduledBackup) ) {
 				throw new Exception('materializedSnapshotManager->materializeLatest: '."Error: Expected a scheduledBackup object to be passed as a parameter, but did not get one.");
@@ -68,6 +70,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 				// Get the backup snapshot that the prevMaterialized is linked to
 				$prevSnapshot = $prevMaterialized->getBackupSnapshot();
+
 				// and its info..
 				$prevSnapInfo = $prevSnapshot->getInfo();
 				$prevSnapPath = $prevSnapshot->getPath();
@@ -81,74 +84,131 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				// otherwise proceed - initialize a new materializedSnapshot
 				$newMaterialized = new materializedSnapshot();
 				$newMaterialized->setLogStream($this->log);
-				$newMaterialized->init($scheduledBackup, $latestSnapshot);
-				$materialPath = $newMaterialized->getPath();
 
-				// Is the group for the materializedSnapshot the same as the latest snapshot?
-				if($latestSnapInfo['snapshot_group_num'] == $prevSnapInfo['snapshot_group_num'] ) {
+				try {
 
-					// if yes - is the backupSnapshot the prevMaterialized is linked to a SEED?
-					if($prevSnapInfo['type'] == 'SEED') {
-						// if yes then --
-						// we need to copy that seed to the new path first
+					$newMaterialized->init($scheduledBackup, $latestSnapshot);
+					$materialPath = $newMaterialized->getPath();
 
-						$copyCommand = 'cp -R '.$prevSnapPath.'/* '.$materialPath.'/';
+					// Is the group for the materializedSnapshot the same as the latest snapshot?
+					if($latestSnapInfo['snapshot_group_num'] == $prevSnapInfo['snapshot_group_num'] ) {
 
-						exec($copyCommand, $output, $returnVar);
+						// if yes - is the backupSnapshot the prevMaterialized is linked to a SEED?
+						if($prevSnapInfo['type'] == 'SEED') {
+							// if yes then --
+							// we need to copy that seed to the new path first
 
-						if($returnVar <> 0 ) {
-							throw new Exception('materializedSnapshotManager->materializeLatest: '."Error: Failed to copy from $prevSnapPath to path $materialPath using command: $copyCommand -- Got output:\n".implode("\n",$output));
-						}
+							$copyCommand = 'cp -R '.$prevSnapPath.'/* '.$materialPath.'/';
+
+							exec($copyCommand, $output, $returnVar);
+
+							if($returnVar <> 0 ) {
+								throw new Exception('materializedSnapshotManager->materializeLatest: '."Error: Failed to copy from $prevSnapPath to path $materialPath using command: $copyCommand -- Got output:\n".implode("\n",$output));
+							}
 
 						
-					} else {
+						} else {
 
-						// If the prevSnapshot is not a SEED then we need to move it to $materialPath
-						if(!rename($prevMaterialized->getPath(), $materialPath) ) {
-							throw new Exception('materializedSnapshotManager->materializeLatest: '."Error: Failed to move $prevSnapPath to $materialPath.");
+							// If the prevSnapshot is not a SEED then we need to move it to $materialPath
+							if(!rename($prevMaterialized->getPath(), $materialPath) ) {
+								throw new Exception('materializedSnapshotManager->materializeLatest: '."Error: Failed to move $prevSnapPath to $materialPath.");
+							}
+
+						}
+
+						// now just roll forward, applying deltas step by step until we reach the current backup
+						$xbBinary = $scheduledBackup->getXtraBackupBinary();
+
+						$snapshotMerger = new backupSnapshotMerger();
+
+						$parentSnapshot = $prevSnapshot;
+
+						do {
+
+							$deltaSnapshot = $parentSnapshot->getChild();
+							$deltaPath = $deltaSnapshot->getPath();
+
+							$this->infolog->write('Merging incremental snapshot deltas from '.$deltaPath.' into path '.$materialPath, XBM_LOG_INFO);
+
+							try {
+								$snapshotMerger->mergePaths($materialPath, $deltaPath, $xbBinary);
+							} catch ( MergeException $mergeEx ) {
+
+								// This snapshot merge failed during materialize
+								// We should remove the bad snapshot and it's children
+
+								// Get the group for the delta that just failed
+								$group = $deltaSnapshot->getSnapshotGroup();
+								// Get the snaps in the group from newest to oldest
+								$snapshotsForGroup = $group->getAllSnapshotsNewestToOldest();
+								// Iterate over them newest to oldest, destroying them, until we meet the one that failed
+								foreach($snapshotsForGroup as $snap) {
+									$snap->destroy();
+									if($snap->id == $deltaSnapshot->id) {
+										break;
+									}
+					
+								}
+
+								throw new Exception('materializedSnapshotManager->materializeLatest: '."Error: An error occurred while trying to materialze the latest snapshot. A set of deltas"
+									." could not be merged successfully.\nThe offending incremental backup and any other backup snapshots that depend upon it have been deleted.\n". $mergeEx->getErrorMessage());
+							}
+
+							$this->infolog->write('Done merging.', XBM_LOG_INFO);
+							$parentSnapshot = $deltaSnapshot;
+
+						} while ( $deltaSnapshot->id != $latestSnapshot->id );
+
+
+					} else {
+						// if groups for snapshot differ, is the backupSnapshot that we need to update to a SEED?
+						if($latestSnapInfo['type'] == 'SEED') {
+							// if yes, just create the symlink
+							$newMaterialized->symlinkToSnapshot($latestSnapshot);
+						} else {
+							// if no, copy the SEED for the snapshotGroup of the new snapshot to the new path, then apply deltas
+							$backupRestorer = new backupRestorer();
+							$backupRestorer->setInfoLogStream($this->infolog);
+							$backupRestorer->setLogStream($this->log);
+							try {
+								$backupRestorer->restoreLocal($latestSnap, $materialPath);
+							} catch ( MergeException $mergeEx ) {
+
+								// This snapshot merge failed during materialize
+								// We should remove the bad snapshot and it's children
+
+								// Get the group for the delta that just failed
+								$group = $latestSnap->getSnapshotGroup();
+								// Get the snaps in the group from newest to oldest
+								$snapshotsForGroup = $group->getAllSnapshotsNewestToOldest();
+								// Iterate over them newest to oldest, destroying them, until we meet the one that failed
+								foreach($snapshotsForGroup as $snap) {
+									$snap->destroy();
+									if($snap->id == $latestSnap->id) {
+										break;
+									}
+					
+								}
+
+								throw new Exception('materializedSnapshotManager->materializeLatest: '."Error: An error occurred while trying to materialze the latest snapshot. A set of deltas"
+									." could not be merged successfully.\nThe offending incremental backup and any other backup snapshots that depend upon it have been deleted.\n". $mergeEx->getErrorMessage());
+							}
 						}
 
 					}
+					// destroy the old snapshot
+					$prevMaterialized->destroy();
 
-					// now just roll forward, applying deltas step by step until we reach the current backup
-					$xbBinary = $scheduledBackup->getXtraBackupBinary();
+				} catch ( Exception $e ) {
 
-					$snapshotMerger = new backupSnapshotMerger();
-
-					$parentSnapshot = $prevSnapshot;
-
-					do {
-
-						$deltaSnapshot = $parentSnapshot->getChild();
-						$deltaPath = $deltaSnapshot->getPath();
-
-						$this->infolog->write('Merging incremental snapshot deltas from '.$deltaPath.' into path '.$materialPath, XBM_LOG_INFO);
-
-						$snapshotMerger->mergePaths($materialPath, $deltaPath, $xbBinary);
-
-						$this->infolog->write('Done merging.', XBM_LOG_INFO);
-						$parentSnapshot = $deltaSnapshot;
-
-					} while ( $deltaSnapshot->id != $latestSnapshot->id );
-
-
-				} else {
-					// if groups for snapshot differ, is the backupSnapshot that we need to update to a SEED?
-					if($latestSnapInfo['type'] == 'SEED') {
-						// if yes, just create the symlink
-						$newMaterialized->symlinkToSnapshot($latestSnapshot);
-					} else {
-						// if no, copy the SEED for the snapshotGroup of the new snapshot to the new path, then apply deltas
-						$backupRestorer = new backupRestorer();
-						$backupRestorer->setInfoLogStream($this->infolog);
-						$backupRestorer->setLogStream($this->log);
-						$backupRestorer->restoreLocal($latestSnap, $materialPath);
+					$prevMaterialized->destroy();
+					$newMaterialized->setStatus('FAILED');
+					if($config['SYSTEM']['cleanup_on_failure'] == true) {
+						$newMaterialized->deleteFiles();
 					}
-
+					
+					throw $e;	
 				}
-				// destroy the old snapshot
-				$prevMaterialized->destroy();
-
 
 			} else {
 				// If no previous materialized snapshot exists at all..
@@ -156,24 +216,58 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 				// Initialize a new materialized snapshot
 				$newMaterialized = new materializedSnapshot();
 				$newMaterialized->setLogStream($this->log);
-				$newMaterialized->init($scheduledBackup, $latestSnapshot);
-				$materialPath = $newMaterialized->getPath();
 
-				// if we do not get one then check if the snapshot is a SEED
-				if($latestSnapInfo['type'] == 'SEED') {
-					// if yes - just create a symlink to it
-					$newMaterialized->symlinkToSnapshot($latestSnapshot);
+				try {
+					$newMaterialized->init($scheduledBackup, $latestSnapshot);
+					$materialPath = $newMaterialized->getPath();
 
-				} else {
-					// if no - use the regular restore function to restore it to the target path
-					$backupRestorer = new backupRestorer();
-					$backupRestorer->setInfoLogStream($this->infolog);
-					$backupRestorer->setLogStream($this->log);
-					$backupRestorer->restoreLocal($latestSnapshot, $materialPath);
+					// if we do not get one then check if the snapshot is a SEED
+					if($latestSnapInfo['type'] == 'SEED') {
+						// if yes - just create a symlink to it
+						$newMaterialized->symlinkToSnapshot($latestSnapshot);
+
+					} else {
+						// if no - use the regular restore function to restore it to the target path
+						$backupRestorer = new backupRestorer();
+						$backupRestorer->setInfoLogStream($this->infolog);
+						$backupRestorer->setLogStream($this->log);
+						try {
+							$backupRestorer->restoreLocal($latestSnapshot, $materialPath);
+						} catch ( MergeException $mergeEx ) {
+
+							// This snapshot merge failed during materialize
+							// We should remove the bad snapshot and it's children
+
+							// Get the group for the delta that just failed
+							$group = $latestSnapshot->getSnapshotGroup();
+							// Get the snaps in the group from newest to oldest
+							$snapshotsForGroup = $group->getAllSnapshotsNewestToOldest();
+							// Iterate over them newest to oldest, destroying them, until we meet the one that failed
+							foreach($snapshotsForGroup as $snap) {
+								$snap->destroy();
+								if($snap->id == $latestSnapshot->id) {
+									break;
+								}
+					
+							}
+
+							throw new Exception('materializedSnapshotManager->materializeLatest: '."Error: An error occurred while trying to materialze the latest snapshot. A set of deltas"
+								." could not be merged successfully.\nThe offending incremental backup and any other backup snapshots that depend upon it have been deleted.\n". $mergeEx->getErrorMessage());
+						}
+					}
+
+				} catch ( Exception $e ) {
+
+					$newMaterialized->setStatus('FAILED');
+
+					if($config['SYSTEM']['cleanup_on_failure'] == true) {
+						$newMaterialized->deleteFiles();
+					}
+
+					throw $e;
 				}
 
 			}
-
 
 			$newMaterialized->setStatus('COMPLETED');
 

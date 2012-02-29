@@ -80,6 +80,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	require('backupStrategy.class.php');
 	require('schemaUpgrader.class.php');
 	require('backupJob.class.php');
+	require('fullonlyBackupTaker.class.php');
 
 	// Include the PHP Text Table project class 
 	// From: http://code.google.com/p/php-text-table/

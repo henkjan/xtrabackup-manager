@@ -37,5 +37,20 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 	class KillException extends Exception {
 	}
 
+	// Exception that occurs when merging a delta backup into a full directory
+	class MergeException extends Exception {
+
+		public function __construct($msg, $errorMsg = "") {
+
+			$this->errorMsg = $errorMsg;
+			parent::__construct($msg);
+
+		}
+
+		public function getErrorMessage() {
+			return $this->errorMsg;
+		}
+	}
+
 
 ?>

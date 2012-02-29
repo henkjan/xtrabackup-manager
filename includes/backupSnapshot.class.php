@@ -263,8 +263,6 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			}
 
 
-			
-
 			$conn = dbConnection::getInstance($this->log);
 
 			$sql = "DELETE FROM backup_snapshots WHERE backup_snapshot_id=".$this->id;
@@ -364,9 +362,6 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 			if(!is_numeric($this->id)) {
 				throw new Exception('backupSnapshot->getChild: '."Error: The ID for this object is not an integer.");
 			}
-
-
-			
 
 			$conn = dbConnection::getInstance($this->log);
 
