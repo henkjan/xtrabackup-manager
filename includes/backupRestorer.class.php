@@ -134,9 +134,11 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 						$deltaPath = $deltaSnapshot->getPath();
 
 						$this->infolog->write('Merging incremental snapshot deltas from '.$deltaPath.' into path '.$path, XBM_LOG_INFO);
-
-						$snapshotMerger->mergePaths($path, $deltaPath, $xbBinary);
-		
+						try {
+							$snapshotMerger->mergePaths($path, $deltaPath, $xbBinary);
+						} catch( MergeException $mergeEx ) {
+							throw new MergeException($mergeEx->getMessage(), $mergeEx->getFailMessage(), $deltaSnapshot);
+						}	
 						$this->infolog->write('Done merging.', XBM_LOG_INFO);
 						$parentSnapshot = $deltaSnapshot;
 

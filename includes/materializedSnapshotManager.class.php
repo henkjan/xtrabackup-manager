@@ -177,14 +177,16 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 								// This snapshot merge failed during materialize
 								// We should remove the bad snapshot and it's children
 
+								$failSnap = $mergeEx->getFailedSnapshot();
+
 								// Get the group for the delta that just failed
-								$group = $latestSnap->getSnapshotGroup();
+								$group = $failSnap->getSnapshotGroup();
 								// Get the snaps in the group from newest to oldest
 								$snapshotsForGroup = $group->getAllSnapshotsNewestToOldest();
 								// Iterate over them newest to oldest, destroying them, until we meet the one that failed
 								foreach($snapshotsForGroup as $snap) {
 									$snap->destroy();
-									if($snap->id == $latestSnap->id) {
+									if($snap->id == $failSnap->id) {
 										break;
 									}
 					
@@ -237,15 +239,15 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 							// This snapshot merge failed during materialize
 							// We should remove the bad snapshot and it's children
-
+							$failSnap = $mergeEx->getFailedSnapshot();
 							// Get the group for the delta that just failed
-							$group = $latestSnapshot->getSnapshotGroup();
+							$group = $failSnap->getSnapshotGroup();
 							// Get the snaps in the group from newest to oldest
 							$snapshotsForGroup = $group->getAllSnapshotsNewestToOldest();
 							// Iterate over them newest to oldest, destroying them, until we meet the one that failed
 							foreach($snapshotsForGroup as $snap) {
 								$snap->destroy();
-								if($snap->id == $latestSnapshot->id) {
+								if($snap->id == $failSnap->id) {
 									break;
 								}
 					
