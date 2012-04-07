@@ -21,7 +21,7 @@ along with XtraBackup Manager.  If not, see <http://www.gnu.org/licenses/>.
 */
 	
 	// Setup global defines that do not depend on anything else
-	define('XBM_RELEASE_VERSION', 'XtraBackup Manager v0.8 - Copyright 2011-2012 Marin Software');
+	define('XBM_RELEASE_VERSION', 'XtraBackup Manager v0.81 - Copyright 2011-2012 Marin Software');
 
 	// Log levels, lower is more verbose
 	define('XBM_LOG_DEBUG', 0);
